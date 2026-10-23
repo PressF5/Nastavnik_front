@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+import { useAuthStore } from "@/store/auth-store";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   constructor(
@@ -33,13 +35,13 @@ function getCookie(name: string): string | undefined {
 }
 
 async function prepareCsrfToken(): Promise<string> {
-  if (!API_BASE_URL) {
+  if (!API_BASE) {
     throw new Error("Не задана переменная NEXT_PUBLIC_API_URL");
   }
 
   // Запрашиваем endpoint напрямую, чтобы не вызывать apiFetch рекурсивно.
   const response = await fetch(
-    `${API_BASE_URL.replace(/\/+$/, "")}/api/auth/csrf`,
+    `${API_BASE.replace(/\/+$/, "")}/api/auth/csrf`,
     {
       method: "GET",
       credentials: "include",
@@ -70,14 +72,14 @@ export async function apiFetch<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  if (!API_BASE_URL) {
+  if (!API_BASE) {
     throw new Error("Не задана переменная NEXT_PUBLIC_API_URL");
   }
 
   const { params, headers: initialHeaders, ...requestOptions } = options;
 
   const url = new URL(
-    `${API_BASE_URL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
+    `${API_BASE.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
   );
 
   if (params) {
@@ -93,6 +95,11 @@ export async function apiFetch<T>(
 
   const headers = new Headers(initialHeaders);
   headers.set("Accept", "application/json");
+
+  const accessToken = useAuthStore.getState().accessToken;
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
 
   if (
     requestOptions.body !== undefined &&

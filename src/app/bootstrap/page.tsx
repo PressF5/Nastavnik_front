@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, ComponentProps } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api-client";
 
@@ -37,6 +37,10 @@ type RegistrationResponse = {
   accountStatus: string;
 };
 
+type FormSubmitEvent = Parameters<
+  NonNullable<ComponentProps<"form">["onSubmit"]>
+>[0];
+
 export default function BootstrapPage() {
   const router = useRouter();
 
@@ -62,7 +66,7 @@ export default function BootstrapPage() {
     }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormSubmitEvent) {
     event.preventDefault();
     setError("");
 
@@ -286,8 +290,8 @@ export default function BootstrapPage() {
                   Повторите пароль *
                   <div className="relative">
                     <input
-                      id="password"
-                      name="password"
+                      id="passwordConfirm"
+                      name="passwordConfirm"
                       type={showPasswordConfirmation ? "text" : "password"}
                       value={form.passwordConfirm}
                       onChange={(event) =>
