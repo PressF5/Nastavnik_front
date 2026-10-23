@@ -10,14 +10,15 @@ export default function DashboardPage() {
 
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (isInitialized && !user) {
       router.replace("/login");
     }
-  }, [user, router]);
+  }, [isInitialized, user, router]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -34,8 +35,12 @@ export default function DashboardPage() {
     }
   }
 
-  if (!user) {
-    return null;
+  if (!isInitialized || !user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
+        <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
+      </main>
+    );
   }
 
   return (
