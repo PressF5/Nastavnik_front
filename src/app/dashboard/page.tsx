@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -141,7 +141,7 @@ export default function DashboardPage() {
     setEditingMsuName("");
   }
 
-  function saveEditingMsu(event: FormEvent<HTMLFormElement>) {
+  function saveEditingMsu(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (editingMsuId === null) {
@@ -334,7 +334,7 @@ export default function DashboardPage() {
     },
   });
 
-  async function handleCreateMsu(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateMsu(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const code = Number(msuCode);
@@ -781,7 +781,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-[480px] text-left text-sm">
+                    <table className="w-fit min-w-120 table-auto text-left text-sm">
                       <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-3 py-3 font-medium">Код</th>
@@ -1074,7 +1074,7 @@ export default function DashboardPage() {
                   </p>
                 ) : (
                   <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-[600px] text-left text-sm">
+                    <table className="w-full min-w-150 text-left text-sm">
                       <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-3 py-3 font-medium">ФИО</th>

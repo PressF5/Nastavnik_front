@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -87,19 +86,13 @@ export default function MsuDetailPage() {
           },
         },
       ),
-    enabled:
-      isInitialized &&
-      isRegionAdmin &&
-      validId &&
-      msuQuery.isSuccess,
+    enabled: isInitialized && isRegionAdmin && validId && msuQuery.isSuccess,
   });
 
   if (!isInitialized || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <p className="text-sm text-slate-600">
-          Проверяем авторизацию...
-        </p>
+        <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
       </main>
     );
   }
@@ -107,9 +100,7 @@ export default function MsuDetailPage() {
   if (!isRegionAdmin) {
     return (
       <main className="min-h-screen bg-[#F8F9FA] p-8">
-        <p className="text-red-700">
-          У вас нет доступа к этой странице.
-        </p>
+        <p className="text-red-700">У вас нет доступа к этой странице.</p>
       </main>
     );
   }
@@ -222,10 +213,7 @@ export default function MsuDetailPage() {
                 </div>
               ) : organizations.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Building2
-                    size={32}
-                    className="mx-auto text-slate-300"
-                  />
+                  <Building2 size={32} className="mx-auto text-slate-300" />
                   <p className="mt-3 font-medium text-slate-800">
                     Образовательных организаций пока нет
                   </p>
@@ -235,7 +223,7 @@ export default function MsuDetailPage() {
                 </div>
               ) : (
                 <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-[420px] text-left text-sm">
+                  <table className="w-full min-w-105 text-left text-sm">
                     <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3 font-medium">Код ОО</th>
@@ -246,10 +234,7 @@ export default function MsuDetailPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {organizations.map((organization) => (
-                        <tr
-                          key={organization.id}
-                          className="hover:bg-slate-50"
-                        >
+                        <tr key={organization.id} className="hover:bg-slate-50">
                           <td className="px-3 py-4 font-medium text-slate-700">
                             {organization.code}
                           </td>
