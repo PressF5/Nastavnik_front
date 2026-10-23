@@ -1,24 +1,240 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api-client";
+import {
+  Building2,
+  ClipboardCheck,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Users,
+} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
+
+type Msu = {
+  id: number;
+  code: number;
+  name: string;
+  regionId: number;
+};
+
+type AdminUser = {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  isBlock: boolean;
+  role: string;
+  accountStatus: "PENDING" | "ACCEPTED" | "REJECTED";
+};
+
+type SpringPage<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
+type DashboardSection = "overview" | "msus" | "requests" | "accounts";
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20";
+
+const buttonPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f] disabled:cursor-not-allowed disabled:opacity-50";
+
+const buttonSecondary =
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Произошла непредвиденная ошибка.";
+}
+
+function fullName(user: AdminUser): string {
+  return [user.lastName, user.firstName, user.middleName]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function statusLabel(status: AdminUser["accountStatus"]): string {
+  switch (status) {
+    case "PENDING":
+      return "Ожидает подтверждения";
+    case "ACCEPTED":
+      return "Подтверждена";
+    case "REJECTED":
+      return "Отклонена";
+  }
+}
+
+function StatusBadge({ status }: { status: AdminUser["accountStatus"] }) {
+  const styles = {
+    PENDING: "bg-amber-50 text-amber-800 ring-amber-200",
+    ACCEPTED: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+    REJECTED: "bg-red-50 text-red-800 ring-red-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${styles[status]}`}
+    >
+      {statusLabel(status)}
+    </span>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const user = useAuthStore((state) => state.user);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
+  const [section, setSection] = useState<DashboardSection>("overview");
+  const [msuName, setMsuName] = useState("");
+  const [msuCode, setMsuCode] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const isRegionAdmin = user?.role === "REGION_ADMIN";
 
   useEffect(() => {
     if (isInitialized && !user) {
       router.replace("/login");
     }
   }, [isInitialized, user, router]);
+
+  // Список МСУ только текущего региона.
+  const msusQuery = useQuery({
+    queryKey: ["region-admin", "msus"],
+    queryFn: () => apiFetch<Msu[]>("/api/admin/msus"),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
+  // Заявки, ожидающие решения регионального администратора.
+  const pendingQuery = useQuery({
+    queryKey: ["region-admin", "pending-msu-admins"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "MSU_ADMIN",
+          status: "PENDING",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
+  // Список администраторов МСУ текущего региона.
+  const accountsQuery = useQuery({
+    queryKey: ["region-admin", "msu-admins"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "MSU_ADMIN",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
+  const refreshDashboard = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msus"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "pending-msu-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msu-admins"],
+      }),
+    ]);
+  };
+
+  const createMsuMutation = useMutation({
+    mutationFn: (request: { code: number; name: string }) =>
+      apiFetch<Msu>("/api/admin/msus", {
+        method: "POST",
+        body: JSON.stringify(request),
+      }),
+    onSuccess: async () => {
+      toast.success("МСУ создано.");
+      setMsuName("");
+      setMsuCode("");
+      setShowCreateForm(false);
+      await refreshDashboard();
+    },
+    onError: (error) => {
+      toast.error("Не удалось создать МСУ", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const approvalMutation = useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: number;
+      action: "approve" | "reject";
+    }) =>
+      apiFetch<AdminUser>(`/api/admin/users/${id}/${action}`, {
+        method: "PATCH",
+      }),
+    onSuccess: async (_, variables) => {
+      toast.success(
+        variables.action === "approve"
+          ? "Учётная запись подтверждена."
+          : "Заявка отклонена.",
+      );
+      await refreshDashboard();
+    },
+    onError: (error) => {
+      toast.error("Не удалось обработать заявку", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  async function handleCreateMsu(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const code = Number(msuCode);
+    const name = msuName.trim();
+
+    if (!Number.isInteger(code) || code <= 0) {
+      toast.error("Код МСУ должен быть положительным целым числом.");
+      return;
+    }
+
+    if (!name) {
+      toast.error("Укажи название МСУ.");
+      return;
+    }
+
+    createMsuMutation.mutate({ code, name });
+  }
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -43,46 +259,569 @@ export default function DashboardPage() {
     );
   }
 
+  if (!isRegionAdmin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA] p-6">
+        <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-xl font-semibold text-[#1D3557]">
+            Кабинет пока не реализован
+          </h1>
+          <p className="mt-3 text-sm text-slate-600">
+            Для роли {user.role} кабинет будет добавлен на следующем этапе.
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`${buttonPrimary} mt-6`}
+          >
+            <LogOut size={16} />
+            {isLoggingOut ? "Выходим..." : "Выйти"}
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  const msus = msusQuery.data ?? [];
+  const pendingAdmins = pendingQuery.data?.content ?? [];
+  const allAdmins = accountsQuery.data?.content ?? [];
+
+  const isRefreshing =
+    msusQuery.isFetching || pendingQuery.isFetching || accountsQuery.isFetching;
+
+  const navigation: {
+    id: DashboardSection;
+    label: string;
+    icon: typeof LayoutDashboard;
+    count?: number;
+  }[] = [
+    { id: "overview", label: "Обзор", icon: LayoutDashboard },
+    { id: "msus", label: "Мой регион: МСУ", icon: Building2 },
+    {
+      id: "requests",
+      label: "Заявки",
+      icon: ClipboardCheck,
+      count: pendingQuery.data?.totalElements,
+    },
+    { id: "accounts", label: "Администраторы МСУ", icon: Users },
+  ];
+
   return (
-    <main className="min-h-screen bg-[#F8F9FA] p-6">
-      <section className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-[#1D3557]">Наставник+</h1>
-
-        <p className="mt-4 text-slate-700">Вы вошли в систему.</p>
-
-        <dl className="mt-6 space-y-3 text-sm">
-          <div>
-            <dt className="text-slate-500">Пользователь</dt>
-            <dd className="font-medium text-slate-900">
-              {user.lastName} {user.firstName} {user.middleName ?? ""}
-            </dd>
+    <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+          <div className="border-b border-slate-200 px-6 py-6">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[#457B9D]">
+              НАСТАВНИК+
+            </p>
+            <h1 className="mt-2 text-lg font-semibold text-[#1D3557]">
+              Управление регионом
+            </h1>
           </div>
 
-          <div>
-            <dt className="text-slate-500">Email</dt>
-            <dd className="text-slate-900">{user.email}</dd>
-          </div>
+          <nav className="flex-1 space-y-1 p-3">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const active = section === item.id;
 
-          <div>
-            <dt className="text-slate-500">Роль</dt>
-            <dd className="text-slate-900">{user.role}</dd>
-          </div>
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSection(item.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
+                    active
+                      ? "bg-[#E8F0F5] font-semibold text-[#1D3557]"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span className="flex-1">{item.label}</span>
+                  {item.count !== undefined && item.count > 0 && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          <div>
-            <dt className="text-slate-500">Статус учётной записи</dt>
-            <dd className="text-slate-900">{user.accountStatus}</dd>
+          <div className="border-t border-slate-200 p-4">
+            <p className="truncate text-sm font-medium text-slate-800">
+              {user.lastName} {user.firstName}
+            </p>
+            <p className="mt-1 truncate text-xs text-slate-500">{user.email}</p>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="mt-4 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+            >
+              <LogOut size={16} />
+              {isLoggingOut ? "Выходим..." : "Выйти"}
+            </button>
           </div>
-        </dl>
+        </aside>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="mt-8 rounded-lg bg-[#1D3557] px-5 py-3 text-sm font-semibold text-white hover:bg-[#27476f] disabled:opacity-60"
-        >
-          {isLoggingOut ? "Выходим..." : "Выйти"}
-        </button>
-      </section>
+        <div className="min-w-0 flex-1">
+          <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-500">
+                  Панель управления / Регион
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-[#1D3557]">
+                  {navigation.find((item) => item.id === section)?.label}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void refreshDashboard()}
+                disabled={isRefreshing}
+                className={buttonSecondary}
+              >
+                <RefreshCw
+                  size={16}
+                  className={isRefreshing ? "animate-spin" : ""}
+                />
+                Обновить
+              </button>
+            </div>
+
+            <nav className="mt-4 flex gap-2 overflow-x-auto lg:hidden">
+              {navigation.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSection(item.id)}
+                  className={`shrink-0 rounded-lg px-3 py-2 text-sm ${
+                    section === item.id
+                      ? "bg-[#1D3557] text-white"
+                      : "border border-slate-200 bg-white text-slate-700"
+                  }`}
+                >
+                  {item.label}
+                  {item.id === "requests" &&
+                    item.count !== undefined &&
+                    item.count > 0 &&
+                    ` (${item.count})`}
+                </button>
+              ))}
+            </nav>
+          </header>
+
+          <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
+            {(msusQuery.isError ||
+              pendingQuery.isError ||
+              accountsQuery.isError) && (
+              <div
+                role="alert"
+                className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <p>
+                  Не удалось загрузить часть данных. Проверь backend и права
+                  доступа, затем повтори запрос.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void msusQuery.refetch();
+                    void pendingQuery.refetch();
+                    void accountsQuery.refetch();
+                  }}
+                  className="font-semibold underline"
+                >
+                  Повторить
+                </button>
+              </div>
+            )}
+
+            {section === "overview" && (
+              <>
+                <section>
+                  <h3 className="text-lg font-semibold text-[#1D3557]">
+                    Добро пожаловать в кабинет
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Здесь ты управляешь МСУ своего региона и подтверждаешь
+                    регистрации их администраторов.
+                  </p>
+                </section>
+
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <StatCard
+                    title="МСУ в регионе"
+                    value={msusQuery.isPending ? "—" : msus.length}
+                    description="Созданные муниципальные управления"
+                    icon={<Building2 size={21} />}
+                  />
+                  <StatCard
+                    title="Ожидают решения"
+                    value={
+                      pendingQuery.isPending
+                        ? "—"
+                        : (pendingQuery.data?.totalElements ?? 0)
+                    }
+                    description="Заявки администраторов МСУ"
+                    icon={<ClipboardCheck size={21} />}
+                  />
+                  <StatCard
+                    title="Администраторы МСУ"
+                    value={
+                      accountsQuery.isPending
+                        ? "—"
+                        : (accountsQuery.data?.totalElements ?? 0)
+                    }
+                    description="Учётные записи в твоём регионе"
+                    icon={<Users size={21} />}
+                  />
+                </section>
+
+                <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-[#1D3557]">
+                        Требуют внимания
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Заявки, которые ещё не обработаны
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSection("requests")}
+                      className="text-sm font-semibold text-[#457B9D] hover:underline"
+                    >
+                      Все заявки
+                    </button>
+                  </div>
+
+                  {pendingQuery.isPending ? (
+                    <p className="py-8 text-sm text-slate-500">
+                      Загружаем заявки...
+                    </p>
+                  ) : pendingAdmins.length === 0 ? (
+                    <p className="py-8 text-sm text-slate-500">
+                      Нет заявок, ожидающих подтверждения.
+                    </p>
+                  ) : (
+                    <div className="mt-4 divide-y divide-slate-100">
+                      {pendingAdmins.slice(0, 5).map((admin) => (
+                        <div
+                          key={admin.id}
+                          className="flex flex-wrap items-center justify-between gap-3 py-4"
+                        >
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {fullName(admin)}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {admin.email}
+                            </p>
+                          </div>
+                          <StatusBadge status={admin.accountStatus} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+
+            {section === "msus" && (
+              <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-[#1D3557]">
+                      Муниципальные управления
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Все МСУ, относящиеся к твоему региону
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm((value) => !value)}
+                    className={buttonPrimary}
+                  >
+                    <Plus size={17} />
+                    {showCreateForm ? "Отмена" : "Создать МСУ"}
+                  </button>
+                </div>
+
+                {showCreateForm && (
+                  <form
+                    onSubmit={handleCreateMsu}
+                    className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2"
+                  >
+                    <label className="text-sm font-medium text-slate-700">
+                      Код МСУ
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min="1"
+                        step="1"
+                        required
+                        value={msuCode}
+                        onChange={(event) => setMsuCode(event.target.value)}
+                        placeholder="Например, 101"
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium text-slate-700">
+                      Название МСУ
+                      <input
+                        className={inputClass}
+                        type="text"
+                        maxLength={500}
+                        required
+                        value={msuName}
+                        onChange={(event) => setMsuName(event.target.value)}
+                        placeholder="Введите название"
+                      />
+                    </label>
+
+                    <div className="sm:col-span-2">
+                      <p className="mb-3 text-xs text-slate-500">
+                        Регион будет назначен автоматически по учётной записи
+                        администратора.
+                      </p>
+                      <button
+                        type="submit"
+                        disabled={createMsuMutation.isPending}
+                        className={buttonPrimary}
+                      >
+                        {createMsuMutation.isPending
+                          ? "Создаём..."
+                          : "Сохранить МСУ"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {msusQuery.isPending ? (
+                  <p className="py-8 text-sm text-slate-500">
+                    Загружаем список МСУ...
+                  </p>
+                ) : msus.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Building2 size={32} className="mx-auto text-slate-300" />
+                    <p className="mt-3 font-medium text-slate-800">
+                      МСУ ещё не созданы
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Создай первое МСУ, чтобы администратор мог подать заявку
+                      на регистрацию.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="w-full min-w-[500px] text-left text-sm">
+                      <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-3 py-3 font-medium">Код</th>
+                          <th className="px-3 py-3 font-medium">Название</th>
+                          <th className="px-3 py-3 font-medium">ID</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {msus.map((msu) => (
+                          <tr key={msu.id} className="hover:bg-slate-50">
+                            <td className="px-3 py-4 font-medium text-slate-700">
+                              {msu.code}
+                            </td>
+                            <td className="px-3 py-4 text-slate-900">
+                              {msu.name}
+                            </td>
+                            <td className="px-3 py-4 text-slate-500">
+                              {msu.id}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {section === "requests" && (
+              <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <h3 className="font-semibold text-[#1D3557]">
+                  Заявки администраторов МСУ
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Подтверждай только заявки пользователей своего региона.
+                </p>
+
+                {pendingQuery.isPending ? (
+                  <p className="py-8 text-sm text-slate-500">
+                    Загружаем заявки...
+                  </p>
+                ) : pendingAdmins.length === 0 ? (
+                  <p className="py-10 text-sm text-slate-500">
+                    Заявок на подтверждение нет.
+                  </p>
+                ) : (
+                  <div className="mt-5 space-y-3">
+                    {pendingAdmins.map((admin) => (
+                      <div
+                        key={admin.id}
+                        className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900">
+                            {fullName(admin)}
+                          </p>
+                          <p className="mt-1 break-all text-sm text-slate-500">
+                            {admin.email}
+                          </p>
+                          <div className="mt-2">
+                            <StatusBadge status={admin.accountStatus} />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              approvalMutation.mutate({
+                                id: admin.id,
+                                action: "approve",
+                              })
+                            }
+                            disabled={approvalMutation.isPending}
+                            className={buttonPrimary}
+                          >
+                            Подтвердить
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                `Отклонить заявку пользователя ${fullName(admin)}?`,
+                              );
+
+                              if (confirmed) {
+                                approvalMutation.mutate({
+                                  id: admin.id,
+                                  action: "reject",
+                                });
+                              }
+                            }}
+                            disabled={approvalMutation.isPending}
+                            className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Отклонить
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {pendingQuery.data &&
+                  pendingQuery.data.totalElements > pendingAdmins.length && (
+                    <p className="mt-4 text-sm text-slate-500">
+                      Показаны первые {pendingAdmins.length} заявок из{" "}
+                      {pendingQuery.data.totalElements}. Для обработки остальных
+                      понадобится добавить постраничную навигацию.
+                    </p>
+                  )}
+              </section>
+            )}
+
+            {section === "accounts" && (
+              <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <h3 className="font-semibold text-[#1D3557]">
+                  Администраторы МСУ
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Учётные записи администраторов в пределах твоего региона.
+                </p>
+
+                {accountsQuery.isPending ? (
+                  <p className="py-8 text-sm text-slate-500">
+                    Загружаем учётные записи...
+                  </p>
+                ) : allAdmins.length === 0 ? (
+                  <p className="py-10 text-sm text-slate-500">
+                    Администраторы МСУ пока не зарегистрированы.
+                  </p>
+                ) : (
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-left text-sm">
+                      <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-3 py-3 font-medium">ФИО</th>
+                          <th className="px-3 py-3 font-medium">Email</th>
+                          <th className="px-3 py-3 font-medium">Статус</th>
+                          <th className="px-3 py-3 font-medium">Блокировка</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allAdmins.map((admin) => (
+                          <tr key={admin.id} className="hover:bg-slate-50">
+                            <td className="px-3 py-4 font-medium text-slate-900">
+                              {fullName(admin)}
+                            </td>
+                            <td className="px-3 py-4 text-slate-600">
+                              {admin.email}
+                            </td>
+                            <td className="px-3 py-4">
+                              <StatusBadge status={admin.accountStatus} />
+                            </td>
+                            <td className="px-3 py-4">
+                              {admin.isBlock ? (
+                                <span className="font-medium text-red-700">
+                                  Заблокирован
+                                </span>
+                              ) : (
+                                <span className="text-slate-600">Нет</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  description,
+  icon,
+}: {
+  title: string;
+  value: number | string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-slate-500">{title}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1D3557]">
+            {value}
+          </p>
+        </div>
+        <div className="rounded-xl bg-[#E8F0F5] p-3 text-[#457B9D]">{icon}</div>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
+    </article>
   );
 }
