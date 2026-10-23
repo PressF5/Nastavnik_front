@@ -781,7 +781,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="mt-5 overflow-x-auto">
-                    <table className="w-fit min-w-120 table-auto text-left text-sm">
+                    <table className="w-full table-fixed text-left text-sm">
                       <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-3 py-3 font-medium">Код</th>
@@ -1074,7 +1074,7 @@ export default function DashboardPage() {
                   </p>
                 ) : (
                   <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-150 text-left text-sm">
+                    <table className="w-full table-fixed text-left text-sm">
                       <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-3 py-3 font-medium">ФИО</th>

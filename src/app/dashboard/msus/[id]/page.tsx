@@ -223,7 +223,7 @@ export default function MsuDetailPage() {
                 </div>
               ) : (
                 <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-105 text-left text-sm">
+                  <table className="w-full table-fixed text-left text-sm">
                     <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3 font-medium">Код ОО</th>
