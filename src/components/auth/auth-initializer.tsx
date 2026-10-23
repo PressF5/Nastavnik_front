@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore, type AuthUser } from "@/store/auth-store";
 
@@ -9,7 +9,7 @@ type RefreshResponse = AuthUser & {
   accessToken: string;
 };
 
-// Не допускаем параллельных refresh-запросов при повторном запуске эффекта.
+// Не допускаем параллельных запросов восстановления сессии.
 let refreshRequest: Promise<RefreshResponse> | null = null;
 
 function refreshSession(): Promise<RefreshResponse> {
@@ -26,38 +26,63 @@ function refreshSession(): Promise<RefreshResponse> {
 
 export function AuthInitializer() {
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
-    const isProtectedRoute =
+    const isLoginPage = pathname === "/login";
+    const isDashboardPage =
       pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
-    // Пока восстанавливаем сессию только для личного кабинета.
-    if (!isProtectedRoute) {
+    // Проверяем только страницы входа и личного кабинета.
+    if (!isLoginPage && !isDashboardPage) {
       return;
     }
+
+    let cancelled = false;
 
     const store = useAuthStore.getState();
 
-    // Если пользователь уже вошёл и токен есть в памяти,
-    // повторный refresh при переходе по страницам не нужен.
+    // Пользователь уже авторизован в текущем состоянии приложения.
     if (store.accessToken && store.user) {
       store.setInitialized(true);
+
+      if (isLoginPage) {
+        router.replace("/dashboard");
+      }
+
       return;
     }
 
+    // До завершения проверки не показываем форму входа
+    // и содержимое личного кабинета.
     store.setInitialized(false);
 
     void refreshSession()
       .then((response) => {
+        if (cancelled) return;
+
         const { accessToken, ...user } = response;
 
         useAuthStore.getState().setAuth(accessToken, user);
+
+        if (isLoginPage) {
+          router.replace("/dashboard");
+        }
       })
       .catch(() => {
-        // Cookie отсутствует, истекла или сервер отклонил refresh.
+        if (cancelled) return;
+
         useAuthStore.getState().setInitialized(true);
+
+        if (isDashboardPage) {
+          router.replace("/login");
+        }
       });
-  }, [pathname]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router]);
 
   return null;
 }

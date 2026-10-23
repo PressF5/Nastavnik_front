@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ComponentProps } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api-client";
@@ -17,12 +17,20 @@ type LoginResponse = AuthUser & {
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const user = useAuthStore((state) => state.user);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isInitialized && user) {
+      router.replace("/dashboard");
+    }
+  }, [isInitialized, user, router]);
 
   async function handleSubmit(event: FormSubmitEvent) {
     event.preventDefault();
@@ -61,6 +69,18 @@ export default function LoginPage() {
 
   const inputClassName =
     "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20 disabled:bg-slate-100";
+
+  if (!isInitialized) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
+        <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
+      </main>
+    );
+  }
+
+  if (user) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA] px-4 py-10">
