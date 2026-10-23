@@ -4,11 +4,16 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   LayoutDashboard,
   LogOut,
+  Pencil,
   Plus,
   RefreshCw,
+  Search,
+  Trash2,
   Users,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +46,9 @@ type SpringPage<T> = {
   totalPages: number;
   number: number;
   size: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
 };
 
 type DashboardSection = "overview" | "msus" | "requests" | "accounts";
@@ -112,6 +120,63 @@ export default function DashboardPage() {
   const [msuCode, setMsuCode] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [msuSearch, setMsuSearch] = useState("");
+  const [msuPage, setMsuPage] = useState(0);
+  const [msuPageSize, setMsuPageSize] = useState(10);
+  const [msuEditMode, setMsuEditMode] = useState(false);
+
+  const [editingMsuId, setEditingMsuId] = useState<number | null>(null);
+  const [editingMsuCode, setEditingMsuCode] = useState("");
+  const [editingMsuName, setEditingMsuName] = useState("");
+
+  function startEditingMsu(msu: Msu) {
+    setEditingMsuId(msu.id);
+    setEditingMsuCode(String(msu.code));
+    setEditingMsuName(msu.name);
+  }
+
+  function cancelEditingMsu() {
+    setEditingMsuId(null);
+    setEditingMsuCode("");
+    setEditingMsuName("");
+  }
+
+  function saveEditingMsu(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (editingMsuId === null) {
+      return;
+    }
+
+    const code = Number(editingMsuCode);
+    const name = editingMsuName.trim();
+
+    if (!Number.isInteger(code) || code <= 0) {
+      toast.error("Код МСУ должен быть положительным целым числом.");
+      return;
+    }
+
+    if (!name) {
+      toast.error("Название МСУ не может быть пустым.");
+      return;
+    }
+
+    updateMsuMutation.mutate({
+      id: editingMsuId,
+      code,
+      name,
+    });
+  }
+
+  function confirmDeleteMsu(msu: Msu) {
+    const confirmed = window.confirm(
+      `Удалить МСУ «${msu.name}»? Удаление невозможно, если к нему привязаны образовательные организации или администраторы МСУ.`,
+    );
+
+    if (confirmed) {
+      deleteMsuMutation.mutate(msu.id);
+    }
+  }
 
   const isRegionAdmin = user?.role === "REGION_ADMIN";
 
@@ -123,8 +188,15 @@ export default function DashboardPage() {
 
   // Список МСУ только текущего региона.
   const msusQuery = useQuery({
-    queryKey: ["region-admin", "msus"],
-    queryFn: () => apiFetch<Msu[]>("/api/admin/msus"),
+    queryKey: ["region-admin", "msus", msuSearch, msuPage, msuPageSize],
+    queryFn: () =>
+      apiFetch<SpringPage<Msu>>("/api/admin/msus", {
+        params: {
+          search: msuSearch,
+          page: msuPage,
+          size: msuPageSize,
+        },
+      }),
     enabled: isInitialized && isRegionAdmin,
   });
 
@@ -186,6 +258,51 @@ export default function DashboardPage() {
     },
     onError: (error) => {
       toast.error("Не удалось создать МСУ", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const updateMsuMutation = useMutation({
+    mutationFn: ({
+      id,
+      code,
+      name,
+    }: {
+      id: number;
+      code: number;
+      name: string;
+    }) =>
+      apiFetch<Msu>(`/api/admin/msus/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ code, name }),
+      }),
+    onSuccess: async () => {
+      toast.success("Данные МСУ обновлены.");
+      setEditingMsuId(null);
+      setEditingMsuCode("");
+      setEditingMsuName("");
+      await refreshDashboard();
+    },
+    onError: (error) => {
+      toast.error("Не удалось обновить МСУ", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const deleteMsuMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/admin/msus/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: async () => {
+      toast.success("МСУ удалено.");
+      setEditingMsuId(null);
+      await refreshDashboard();
+    },
+    onError: (error) => {
+      toast.error("Не удалось удалить МСУ", {
         description: getErrorMessage(error),
       });
     },
@@ -283,7 +400,9 @@ export default function DashboardPage() {
     );
   }
 
-  const msus = msusQuery.data ?? [];
+  const msus = msusQuery.data?.content ?? [];
+  const totalMsus = msusQuery.data?.totalElements ?? 0;
+  const totalMsuPages = msusQuery.data?.totalPages ?? 0;
   const pendingAdmins = pendingQuery.data?.content ?? [];
   const allAdmins = accountsQuery.data?.content ?? [];
 
@@ -454,7 +573,7 @@ export default function DashboardPage() {
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <StatCard
                     title="МСУ в регионе"
-                    value={msusQuery.isPending ? "—" : msus.length}
+                    value={msusQuery.isPending ? "—" : totalMsus}
                     description="Созданные муниципальные управления"
                     icon={<Building2 size={21} />}
                   />
@@ -603,49 +722,250 @@ export default function DashboardPage() {
                   </form>
                 )}
 
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="relative block w-full sm:max-w-md">
+                    <Search
+                      size={17}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      type="search"
+                      value={msuSearch}
+                      onChange={(event) => {
+                        setMsuSearch(event.target.value);
+                        setMsuPage(0);
+                      }}
+                      placeholder="Поиск по коду или названию МСУ"
+                      className={`${inputClass} mt-0 pl-9`}
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMsuEditMode((value) => !value);
+                        cancelEditingMsu();
+                      }}
+                      className={buttonSecondary}
+                    >
+                      <Pencil size={16} />
+                      {msuEditMode
+                        ? "Завершить редактирование"
+                        : "Режим редактирования"}
+                    </button>
+                  </div>
+                </div>
+
                 {msusQuery.isPending ? (
                   <p className="py-8 text-sm text-slate-500">
                     Загружаем список МСУ...
+                  </p>
+                ) : msusQuery.isError ? (
+                  <p role="alert" className="py-8 text-sm text-red-700">
+                    Не удалось загрузить список МСУ.
                   </p>
                 ) : msus.length === 0 ? (
                   <div className="py-12 text-center">
                     <Building2 size={32} className="mx-auto text-slate-300" />
                     <p className="mt-3 font-medium text-slate-800">
-                      МСУ ещё не созданы
+                      {msuSearch
+                        ? "МСУ по вашему запросу не найдены"
+                        : "МСУ ещё не созданы"}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      Создай первое МСУ, чтобы администратор мог подать заявку
-                      на регистрацию.
+                      {msuSearch
+                        ? "Измените поисковый запрос."
+                        : "Создайте первое МСУ, чтобы продолжить работу."}
                     </p>
                   </div>
                 ) : (
                   <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-[500px] text-left text-sm">
+                    <table className="w-full min-w-[480px] text-left text-sm">
                       <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                           <th className="px-3 py-3 font-medium">Код</th>
-                          <th className="px-3 py-3 font-medium">Название</th>
-                          <th className="px-3 py-3 font-medium">ID</th>
+                          <th className="px-3 py-3 font-medium">
+                            Название МСУ
+                          </th>
+                          {msuEditMode && (
+                            <th className="px-3 py-3 font-medium">Действия</th>
+                          )}
                         </tr>
                       </thead>
+
                       <tbody className="divide-y divide-slate-100">
                         {msus.map((msu) => (
                           <tr key={msu.id} className="hover:bg-slate-50">
-                            <td className="px-3 py-4 font-medium text-slate-700">
-                              {msu.code}
-                            </td>
-                            <td className="px-3 py-4 text-slate-900">
-                              {msu.name}
-                            </td>
-                            <td className="px-3 py-4 text-slate-500">
-                              {msu.id}
-                            </td>
+                            {editingMsuId === msu.id ? (
+                              <td colSpan={msuEditMode ? 3 : 2} className="p-3">
+                                <form
+                                  onSubmit={saveEditingMsu}
+                                  className="grid gap-3 sm:grid-cols-2"
+                                >
+                                  <label className="text-xs font-medium text-slate-600">
+                                    Код
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      step="1"
+                                      required
+                                      value={editingMsuCode}
+                                      onChange={(event) =>
+                                        setEditingMsuCode(event.target.value)
+                                      }
+                                      className={inputClass}
+                                    />
+                                  </label>
+
+                                  <label className="text-xs font-medium text-slate-600">
+                                    Название
+                                    <input
+                                      type="text"
+                                      maxLength={500}
+                                      required
+                                      value={editingMsuName}
+                                      onChange={(event) =>
+                                        setEditingMsuName(event.target.value)
+                                      }
+                                      className={inputClass}
+                                    />
+                                  </label>
+
+                                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                                    <button
+                                      type="submit"
+                                      disabled={updateMsuMutation.isPending}
+                                      className={buttonPrimary}
+                                    >
+                                      {updateMsuMutation.isPending
+                                        ? "Сохраняем..."
+                                        : "Сохранить"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={cancelEditingMsu}
+                                      disabled={updateMsuMutation.isPending}
+                                      className={buttonSecondary}
+                                    >
+                                      Отмена
+                                    </button>
+                                  </div>
+                                </form>
+                              </td>
+                            ) : (
+                              <>
+                                <td className="px-3 py-4 font-medium text-slate-700">
+                                  {msu.code}
+                                </td>
+
+                                <td className="px-3 py-4">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      router.push(`/dashboard/msus/${msu.id}`)
+                                    }
+                                    className="text-left font-medium text-[#1D3557] hover:text-[#457B9D] hover:underline"
+                                  >
+                                    {msu.name}
+                                  </button>
+                                </td>
+
+                                {msuEditMode && (
+                                  <td className="px-3 py-4">
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditingMsu(msu)}
+                                        className={buttonSecondary}
+                                        aria-label={`Редактировать ${msu.name}`}
+                                      >
+                                        <Pencil size={15} />
+                                        Изменить
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => confirmDeleteMsu(msu)}
+                                        disabled={deleteMsuMutation.isPending}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                        aria-label={`Удалить ${msu.name}`}
+                                      >
+                                        <Trash2 size={15} />
+                                        Удалить
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
+                              </>
+                            )}
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 )}
+
+                <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <label htmlFor="msu-page-size">Записей на странице:</label>
+                    <select
+                      id="msu-page-size"
+                      value={msuPageSize}
+                      onChange={(event) => {
+                        setMsuPageSize(Number(event.target.value));
+                        setMsuPage(0);
+                      }}
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-2"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+
+                    <span>Всего: {totalMsus}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMsuPage((page) => Math.max(0, page - 1))
+                      }
+                      disabled={msuPage === 0 || msusQuery.isFetching}
+                      className={buttonSecondary}
+                    >
+                      <ChevronLeft size={16} />
+                      Назад
+                    </button>
+
+                    <span className="min-w-24 text-center text-sm text-slate-600">
+                      Страница {totalMsuPages === 0 ? 0 : msuPage + 1} из{" "}
+                      {totalMsuPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMsuPage((page) =>
+                          totalMsuPages === 0
+                            ? 0
+                            : Math.min(totalMsuPages - 1, page + 1),
+                        )
+                      }
+                      disabled={
+                        msuPage >= totalMsuPages - 1 ||
+                        totalMsuPages === 0 ||
+                        msusQuery.isFetching
+                      }
+                      className={buttonSecondary}
+                    >
+                      Далее
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
               </section>
             )}
 
