@@ -131,8 +131,12 @@ export async function apiFetch<T>(
     if (typeof details === "object" && details !== null) {
       if ("message" in details && typeof details.message === "string") {
         message = details.message;
+      } else if ("detail" in details && typeof details.detail === "string") {
+        message = details.detail;
       } else if ("error" in details && typeof details.error === "string") {
         message = details.error;
+      } else if ("title" in details && typeof details.title === "string") {
+        message = details.title;
       }
     }
 
