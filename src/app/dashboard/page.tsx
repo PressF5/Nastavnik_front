@@ -215,6 +215,21 @@ export default function DashboardPage() {
     enabled: isInitialized && isRegionAdmin,
   });
 
+  // Заявки администраторов ОО, ожидающие решения регионального администратора.
+  const pendingOoAdminsQuery = useQuery({
+    queryKey: ["region-admin", "pending-oo-admins"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "OO_ADMIN",
+          status: "PENDING",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
   // Список администраторов МСУ текущего региона.
   const accountsQuery = useQuery({
     queryKey: ["region-admin", "msu-admins"],
@@ -239,6 +254,9 @@ export default function DashboardPage() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["region-admin", "msu-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "pending-oo-admins"],
       }),
     ]);
   };
@@ -403,11 +421,22 @@ export default function DashboardPage() {
   const msus = msusQuery.data?.content ?? [];
   const totalMsus = msusQuery.data?.totalElements ?? 0;
   const totalMsuPages = msusQuery.data?.totalPages ?? 0;
-  const pendingAdmins = pendingQuery.data?.content ?? [];
+  const pendingMsuAdmins = pendingQuery.data?.content ?? [];
+  const pendingOoAdmins = pendingOoAdminsQuery.data?.content ?? [];
+
+  const pendingAdmins = [...pendingMsuAdmins, ...pendingOoAdmins];
+
+  const totalPendingAdmins =
+    (pendingQuery.data?.totalElements ?? 0) +
+    (pendingOoAdminsQuery.data?.totalElements ?? 0);
+
   const allAdmins = accountsQuery.data?.content ?? [];
 
   const isRefreshing =
-    msusQuery.isFetching || pendingQuery.isFetching || accountsQuery.isFetching;
+    msusQuery.isFetching ||
+    pendingQuery.isFetching ||
+    pendingOoAdminsQuery.isFetching ||
+    accountsQuery.isFetching;
 
   const navigation: {
     id: DashboardSection;
@@ -421,7 +450,7 @@ export default function DashboardPage() {
       id: "requests",
       label: "Заявки",
       icon: ClipboardCheck,
-      count: pendingQuery.data?.totalElements,
+      count: totalPendingAdmins,
     },
     { id: "accounts", label: "Администраторы МСУ", icon: Users },
   ];
@@ -535,6 +564,7 @@ export default function DashboardPage() {
           <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
             {(msusQuery.isError ||
               pendingQuery.isError ||
+              pendingOoAdminsQuery.isError ||
               accountsQuery.isError) && (
               <div
                 role="alert"
@@ -550,6 +580,7 @@ export default function DashboardPage() {
                     void msusQuery.refetch();
                     void pendingQuery.refetch();
                     void accountsQuery.refetch();
+                    void pendingOoAdminsQuery.refetch();
                   }}
                   className="font-semibold underline"
                 >
@@ -580,11 +611,11 @@ export default function DashboardPage() {
                   <StatCard
                     title="Ожидают решения"
                     value={
-                      pendingQuery.isPending
+                      pendingQuery.isPending || pendingOoAdminsQuery.isPending
                         ? "—"
-                        : (pendingQuery.data?.totalElements ?? 0)
+                        : totalPendingAdmins
                     }
-                    description="Заявки администраторов МСУ"
+                    description="Заявки администраторов МСУ и ОО"
                     icon={<ClipboardCheck size={21} />}
                   />
                   <StatCard
@@ -972,7 +1003,7 @@ export default function DashboardPage() {
             {section === "requests" && (
               <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
                 <h3 className="font-semibold text-[#1D3557]">
-                  Заявки администраторов МСУ
+                  Заявки администраторов МСУ и ОО
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
                   Подтверждай только заявки пользователей своего региона.
@@ -999,6 +1030,13 @@ export default function DashboardPage() {
                           </p>
                           <p className="mt-1 break-all text-sm text-slate-500">
                             {admin.email}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-[#457B9D]">
+                            {admin.role === "MSU_ADMIN"
+                              ? "Администратор МСУ"
+                              : admin.role === "OO_ADMIN"
+                                ? "Администратор образовательной организации"
+                                : admin.role}
                           </p>
                           <div className="mt-2">
                             <StatusBadge status={admin.accountStatus} />

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Building2, ChevronLeft, ChevronRight } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -41,7 +41,7 @@ function getErrorMessage(error: unknown): string {
 const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
 
-export default function MsuDetailPage() {
+function MsuDetailContent() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
 
@@ -54,6 +54,14 @@ export default function MsuDetailPage() {
   const msuId = Number(params.id);
   const validId = Number.isSafeInteger(msuId) && msuId > 0;
   const isRegionAdmin = user?.role === "REGION_ADMIN";
+
+  const [showCreateOrganizationForm, setShowCreateOrganizationForm] =
+    useState(false);
+
+  const [organizationCode, setOrganizationCode] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (isInitialized && !user) {
@@ -87,6 +95,31 @@ export default function MsuDetailPage() {
         },
       ),
     enabled: isInitialized && isRegionAdmin && validId && msuQuery.isSuccess,
+  });
+
+  const createOrganizationMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<EducationalOrganization>(
+        "/api/admin/educational-organizations",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            code: Number(organizationCode),
+            name: organizationName.trim(),
+            msuId,
+          }),
+        },
+      ),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msu", msuId, "educational-organizations"],
+      });
+
+      setOrganizationCode("");
+      setOrganizationName("");
+      setShowCreateOrganizationForm(false);
+    },
   });
 
   if (!isInitialized || !user) {
@@ -189,10 +222,101 @@ export default function MsuDetailPage() {
                   </p>
                 </div>
 
-                <span className="text-sm text-slate-500">
-                  Всего: {totalElements}
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm text-slate-500">
+                    Всего: {totalElements}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowCreateOrganizationForm((value) => !value)
+                    }
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#27476f]"
+                  >
+                    <Building2 size={16} />
+                    Добавить ОО
+                  </button>
+                </div>
               </div>
+
+              {showCreateOrganizationForm && (
+                <form
+                  className="mt-5 grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+
+                    if (
+                      !Number.isSafeInteger(Number(organizationCode)) ||
+                      Number(organizationCode) <= 0 ||
+                      !organizationName.trim()
+                    ) {
+                      return;
+                    }
+
+                    createOrganizationMutation.mutate();
+                  }}
+                >
+                  <label className="text-sm font-medium text-slate-700">
+                    Код ОО
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      value={organizationCode}
+                      onChange={(event) =>
+                        setOrganizationCode(event.target.value)
+                      }
+                      className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                    />
+                  </label>
+
+                  <label className="text-sm font-medium text-slate-700">
+                    Название ОО
+                    <input
+                      type="text"
+                      maxLength={500}
+                      required
+                      value={organizationName}
+                      onChange={(event) =>
+                        setOrganizationName(event.target.value)
+                      }
+                      className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <button
+                      type="submit"
+                      disabled={createOrganizationMutation.isPending}
+                      className="rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      {createOrganizationMutation.isPending
+                        ? "Создаём..."
+                        : "Создать ОО"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateOrganizationForm(false)}
+                      disabled={createOrganizationMutation.isPending}
+                      className={buttonClass}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+
+                  {createOrganizationMutation.isError && (
+                    <p
+                      role="alert"
+                      className="text-sm text-red-700 sm:col-span-2"
+                    >
+                      {getErrorMessage(createOrganizationMutation.error)}
+                    </p>
+                  )}
+                </form>
+              )}
 
               {organizationsQuery.isPending ? (
                 <p className="py-8 text-sm text-slate-500">
@@ -311,5 +435,19 @@ export default function MsuDetailPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function MsuDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
+          <p className="text-sm text-slate-600">Загружаем данные МСУ...</p>
+        </main>
+      }
+    >
+      <MsuDetailContent />
+    </Suspense>
   );
 }
