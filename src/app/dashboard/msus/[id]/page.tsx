@@ -8,6 +8,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 
+import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
+
 type Msu = {
   id: number;
   code: number;
@@ -61,7 +63,14 @@ function MsuDetailContent() {
   const [organizationCode, setOrganizationCode] = useState("");
   const [organizationName, setOrganizationName] = useState("");
 
+  const { setSection } = useDashboardShell();
+
   const queryClient = useQueryClient();
+
+  function backToMsus() {
+    setSection("msus");
+    router.push("/dashboard");
+  }
 
   useEffect(() => {
     if (isInitialized && !user) {
@@ -144,7 +153,7 @@ function MsuDetailContent() {
         <p className="text-red-700">Некорректный идентификатор МСУ.</p>
         <button
           type="button"
-          onClick={() => router.push("/dashboard")}
+          onClick={backToMsus}
           className={`${buttonClass} mt-4`}
         >
           Вернуться в кабинет
@@ -160,11 +169,7 @@ function MsuDetailContent() {
   return (
     <main className="min-h-screen bg-[#F8F9FA] p-4 text-slate-900 sm:p-8">
       <div className="mx-auto max-w-7xl">
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className={buttonClass}
-        >
+        <button type="button" onClick={backToMsus} className={buttonClass}>
           <ArrowLeft size={16} />
           Вернуться к списку МСУ
         </button>

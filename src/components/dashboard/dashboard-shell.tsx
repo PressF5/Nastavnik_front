@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { Menu, PanelLeft, UserRound } from "lucide-react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Menu, PanelLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { apiFetch } from "@/lib/api-client";
@@ -16,11 +16,9 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } =
-    useDashboardShell();
+  const { collapsed, setCollapsed, setMobileOpen } = useDashboardShell();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -54,42 +52,29 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
       <DashboardSidebar onLogout={handleLogout} isLoggingOut={isLoggingOut} />
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (window.innerWidth < 1024) {
-                  setMobileOpen(true);
-                } else {
-                  setCollapsed(!collapsed);
-                }
-              }}
-              aria-label="Открыть или свернуть меню"
-              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
-            >
-              {collapsed ? <PanelLeft size={20} /> : <Menu size={20} />}
-            </button>
-
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[#1D3557]">
-                НАСТАВНИК+
-              </p>
-              <p className="truncate text-xs text-slate-500">{pageTitle}</p>
-            </div>
-          </div>
-
+        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
           <button
             type="button"
-            onClick={() => router.push("/dashboard/profile")}
-            className="flex shrink-0 items-center gap-2 rounded-lg p-2 text-slate-600 hover:bg-slate-50"
-            aria-label="Открыть профиль"
+            onClick={() => {
+              if (window.innerWidth < 1024) {
+                setMobileOpen(true);
+              } else {
+                setCollapsed(!collapsed);
+              }
+            }}
+            aria-label="Открыть или свернуть меню"
+            title="Открыть или свернуть меню"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
           >
-            <UserRound size={19} />
-            <span className="hidden max-w-40 truncate text-sm sm:block">
-              {user ? `${user.lastName} ${user.firstName}` : "Профиль"}
-            </span>
+            {collapsed ? <PanelLeft size={20} /> : <Menu size={20} />}
           </button>
+
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-[#1D3557]">
+              НАСТАВНИК+
+            </p>
+            <p className="truncate text-xs text-slate-500">{pageTitle}</p>
+          </div>
         </header>
 
         {children}
@@ -101,7 +86,9 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
 export function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <DashboardShellProvider>
-      <DashboardShellContent>{children}</DashboardShellContent>
+      <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA]" />}>
+        <DashboardShellContent>{children}</DashboardShellContent>
+      </Suspense>
     </DashboardShellProvider>
   );
 }

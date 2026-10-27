@@ -10,7 +10,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import {
   useDashboardShell,
@@ -39,6 +39,7 @@ export function DashboardSidebar({
   isLoggingOut,
 }: DashboardSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
 
   const {
@@ -53,11 +54,18 @@ export function DashboardSidebar({
   function navigateToSection(nextSection: DashboardSection) {
     setSection(nextSection);
     setMobileOpen(false);
+
+    if (pathname !== "/dashboard") {
+      router.push("/dashboard");
+    }
   }
 
   function openProfile() {
     setMobileOpen(false);
-    router.push("/dashboard/profile");
+
+    if (pathname !== "/dashboard/profile") {
+      router.push("/dashboard/profile");
+    }
   }
 
   return (
@@ -76,7 +84,7 @@ export function DashboardSidebar({
           "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white",
           "transition-[width,transform] duration-200",
           "lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0",
-          collapsed ? "lg:w-19" : "lg:w-64",
+          collapsed ? "lg:w-[76px]" : "lg:w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         ].join(" ")}
       >
@@ -116,16 +124,20 @@ export function DashboardSidebar({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <nav
+          aria-label="Основная навигация"
+          className="flex-1 space-y-1 overflow-y-auto p-3"
+        >
           {navigation.map((item) => {
             const Icon = item.icon;
-            const active = section === item.id;
+            const active = pathname === "/dashboard" && section === item.id;
 
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => navigateToSection(item.id)}
+                aria-current={active ? "page" : undefined}
                 title={collapsed ? item.label : undefined}
                 className={[
                   "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition",
@@ -149,6 +161,7 @@ export function DashboardSidebar({
             type="button"
             onClick={openProfile}
             title={collapsed ? "Профиль пользователя" : undefined}
+            aria-label="Открыть профиль пользователя"
             className={[
               "flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-slate-50",
               collapsed ? "lg:justify-center" : "",
