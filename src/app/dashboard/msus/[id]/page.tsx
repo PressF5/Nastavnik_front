@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Search,
   Trash2,
 } from "lucide-react";
 
@@ -375,7 +376,30 @@ function MsuDetailContent() {
                     <Building2 size={16} />
                     Добавить ОО
                   </button>
+                </div>
+              </div>
 
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <label className="relative block w-full sm:max-w-md">
+                  <Search
+                    size={17}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    id="organization-search"
+                    type="search"
+                    value={organizationSearch}
+                    onChange={(event) => {
+                      setOrganizationSearch(event.target.value);
+                      setPage(0);
+                    }}
+                    placeholder="Поиск по коду или названию ОО"
+                    className="mt-0 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 pl-9 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+                  />
+                </label>
+
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -392,32 +416,11 @@ function MsuDetailContent() {
                 </div>
               </div>
 
-              <div className="mt-5">
-                <label
-                  htmlFor="organization-search"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Поиск образовательной организации
-                </label>
-
-                <input
-                  id="organization-search"
-                  type="search"
-                  value={organizationSearch}
-                  onChange={(event) => {
-                    setOrganizationSearch(event.target.value);
-                    setPage(0);
-                  }}
-                  placeholder="Введите название школы или код ОО"
-                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
-                />
-
-                {organizationSearch.trim() && (
-                  <p className="mt-2 text-sm text-slate-500">
-                    Найдено организаций: {totalElements}
-                  </p>
-                )}
-              </div>
+              {organizationSearch.trim() && (
+                <p className="mt-2 text-sm text-slate-500">
+                  Найдено организаций: {totalElements}
+                </p>
+              )}
 
               {showCreateOrganizationForm && (
                 <form
