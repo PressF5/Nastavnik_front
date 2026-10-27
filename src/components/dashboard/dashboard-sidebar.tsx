@@ -1,6 +1,5 @@
 "use client";
 
-import { useDashboardShell, DashboardSection } from "@/components/dashboard/dashboard-shell-context";
 import {
   Building2,
   ClipboardCheck,
@@ -12,25 +11,28 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+import {
+  useDashboardShell,
+  type DashboardSection,
+} from "@/components/dashboard/dashboard-shell-context";
 import { useAuthStore } from "@/store/auth-store";
 
 type DashboardSidebarProps = {
-  activeSection?: DashboardSection;
-  onSectionChange?: (section: DashboardSection) => void;
-  collapsed: boolean;
-  mobileOpen: boolean;
-  onToggleCollapsed: () => void;
-  onCloseMobile: () => void;
   onLogout: () => void;
   isLoggingOut: boolean;
 };
 
-const navigation = [
+const navigation: {
+  id: DashboardSection;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
   { id: "overview", label: "Обзор", icon: LayoutDashboard },
   { id: "msus", label: "Мой регион: МСУ", icon: Building2 },
   { id: "requests", label: "Заявки", icon: ClipboardCheck },
   { id: "accounts", label: "Администраторы МСУ", icon: UserRound },
-] as const;
+];
 
 export function DashboardSidebar({
   onLogout,
@@ -38,17 +40,18 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+
   const {
     section,
     setSection,
     collapsed,
-    mobileOpen,
     setCollapsed,
+    mobileOpen,
     setMobileOpen,
   } = useDashboardShell();
 
-  function navigateToSection(section: DashboardSection) {
-    onSectionChange?.(section);
+  function navigateToSection(nextSection: DashboardSection) {
+    setSection(nextSection);
     setMobileOpen(false);
   }
 
@@ -63,7 +66,7 @@ export function DashboardSidebar({
         <button
           type="button"
           aria-label="Закрыть меню"
-          onClick={onCloseMobile}
+          onClick={() => setMobileOpen(false)}
           className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
         />
       )}
@@ -91,7 +94,7 @@ export function DashboardSidebar({
 
           <button
             type="button"
-            onClick={setMobileOpen(false)}
+            onClick={() => setMobileOpen(false)}
             aria-label="Закрыть боковую панель"
             className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
           >
@@ -100,7 +103,7 @@ export function DashboardSidebar({
 
           <button
             type="button"
-            onClick={setCollapsed(!collapsed)}
+            onClick={() => setCollapsed(!collapsed)}
             aria-label={collapsed ? "Развернуть панель" : "Свернуть панель"}
             title={collapsed ? "Развернуть панель" : "Свернуть панель"}
             className="hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:inline-flex"
@@ -116,7 +119,7 @@ export function DashboardSidebar({
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const active = activeSection === item.id;
+            const active = section === item.id;
 
             return (
               <button
@@ -163,7 +166,9 @@ export function DashboardSidebar({
               <p className="truncate text-sm font-medium text-slate-800">
                 {user ? `${user.lastName} ${user.firstName}` : "Пользователь"}
               </p>
-              <p className="truncate text-xs text-slate-500">{user?.email}</p>
+              <p className="truncate text-xs text-slate-500">
+                {user?.email ?? ""}
+              </p>
             </div>
           </button>
 

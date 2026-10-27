@@ -51,14 +51,7 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] text-slate-900">
-      <DashboardSidebar
-        collapsed={collapsed}
-        mobileOpen={mobileOpen}
-        onToggleCollapsed={() => setCollapsed(!collapsed)}
-        onCloseMobile={() => setMobileOpen(false)}
-        onLogout={handleLogout}
-        isLoggingOut={isLoggingOut}
-      />
+      <DashboardSidebar onLogout={handleLogout} isLoggingOut={isLoggingOut} />
 
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
