@@ -21,6 +21,10 @@ import { toast } from "sonner";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
+import {
+  useDashboardShell,
+  type DashboardSection,
+} from "@/components/dashboard/dashboard-shell-context";
 
 type Msu = {
   id: number;
@@ -50,8 +54,6 @@ type SpringPage<T> = {
   last: boolean;
   empty: boolean;
 };
-
-type DashboardSection = "overview" | "msus" | "requests" | "accounts";
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20";
@@ -115,7 +117,6 @@ export default function DashboardPage() {
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  const [section, setSection] = useState<DashboardSection>("overview");
   const [msuName, setMsuName] = useState("");
   const [msuCode, setMsuCode] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -128,6 +129,7 @@ export default function DashboardPage() {
   const [editingMsuId, setEditingMsuId] = useState<number | null>(null);
   const [editingMsuCode, setEditingMsuCode] = useState("");
   const [editingMsuName, setEditingMsuName] = useState("");
+  const { section, setSection } = useDashboardShell();
 
   function startEditingMsu(msu: Msu) {
     setEditingMsuId(msu.id);
