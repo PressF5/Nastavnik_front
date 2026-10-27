@@ -38,6 +38,7 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
     } finally {
       clearAuth();
       router.replace("/login");
+      setIsLoggingOut(false);
     }
   }
 

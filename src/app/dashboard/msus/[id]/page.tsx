@@ -1,14 +1,24 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type SubmitEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
+
+import { toast } from "sonner";
+
+import {
+  ArrowLeft,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 type Msu = {
   id: number;
@@ -53,6 +63,8 @@ function MsuDetailContent() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
+  const [organizationSearch, setOrganizationSearch] = useState("");
+
   const msuId = Number(params.id);
   const validId = Number.isSafeInteger(msuId) && msuId > 0;
   const isRegionAdmin = user?.role === "REGION_ADMIN";
@@ -63,9 +75,65 @@ function MsuDetailContent() {
   const [organizationCode, setOrganizationCode] = useState("");
   const [organizationName, setOrganizationName] = useState("");
 
+  const [organizationEditMode, setOrganizationEditMode] = useState(false);
+  const [editingOrganizationId, setEditingOrganizationId] = useState<
+    number | null
+  >(null);
+  const [editingOrganizationCode, setEditingOrganizationCode] = useState("");
+  const [editingOrganizationName, setEditingOrganizationName] = useState("");
+
   const { setSection } = useDashboardShell();
 
   const queryClient = useQueryClient();
+
+  function startEditingOrganization(organization: EducationalOrganization) {
+    setEditingOrganizationId(organization.id);
+    setEditingOrganizationCode(String(organization.code));
+    setEditingOrganizationName(organization.name);
+  }
+
+  function cancelEditingOrganization() {
+    setEditingOrganizationId(null);
+    setEditingOrganizationCode("");
+    setEditingOrganizationName("");
+  }
+
+  function saveEditingOrganization(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (editingOrganizationId === null) {
+      return;
+    }
+
+    const code = Number(editingOrganizationCode);
+    const name = editingOrganizationName.trim();
+
+    if (!Number.isSafeInteger(code) || code <= 0) {
+      toast.error("Код ОО должен быть положительным целым числом.");
+      return;
+    }
+
+    if (!name) {
+      toast.error("Название ОО не может быть пустым.");
+      return;
+    }
+
+    updateOrganizationMutation.mutate({
+      id: editingOrganizationId,
+      code,
+      name,
+    });
+  }
+
+  function confirmDeleteOrganization(organization: EducationalOrganization) {
+    const confirmed = window.confirm(
+      `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, backend может запретить удаление.`,
+    );
+
+    if (confirmed) {
+      deleteOrganizationMutation.mutate(organization.id);
+    }
+  }
 
   function backToMsus() {
     setSection("msus");
@@ -90,19 +158,23 @@ function MsuDetailContent() {
       "msu",
       msuId,
       "educational-organizations",
+      organizationSearch,
       page,
       pageSize,
     ],
+
     queryFn: () =>
       apiFetch<SpringPage<EducationalOrganization>>(
         `/api/admin/msus/${msuId}/educational-organizations`,
         {
           params: {
+            search: organizationSearch.trim(),
             page,
             size: pageSize,
           },
         },
       ),
+
     enabled: isInitialized && isRegionAdmin && validId && msuQuery.isSuccess,
   });
 
@@ -128,6 +200,67 @@ function MsuDetailContent() {
       setOrganizationCode("");
       setOrganizationName("");
       setShowCreateOrganizationForm(false);
+    },
+  });
+
+  const updateOrganizationMutation = useMutation({
+    mutationFn: ({
+      id,
+      code,
+      name,
+    }: {
+      id: number;
+      code: number;
+      name: string;
+    }) =>
+      apiFetch<EducationalOrganization>(
+        `/api/admin/educational-organizations/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ code, name }),
+        },
+      ),
+
+    onSuccess: async () => {
+      toast.success("Данные ОО обновлены.");
+      cancelEditingOrganization();
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msu", msuId, "educational-organizations"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось обновить ОО", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const deleteOrganizationMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/admin/educational-organizations/${id}`, {
+        method: "DELETE",
+      }),
+
+    onSuccess: async () => {
+      toast.success("Образовательная организация удалена.");
+      cancelEditingOrganization();
+
+      // Если удалили последнюю запись на странице, возвращаемся на предыдущую.
+      if (organizations.length === 1 && page > 0) {
+        setPage((current) => current - 1);
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msu", msuId, "educational-organizations"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось удалить ОО", {
+        description: getErrorMessage(error),
+      });
     },
   });
 
@@ -242,7 +375,48 @@ function MsuDetailContent() {
                     <Building2 size={16} />
                     Добавить ОО
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOrganizationEditMode((value) => !value);
+                      cancelEditingOrganization();
+                    }}
+                    className={buttonClass}
+                  >
+                    <Pencil size={16} />
+                    {organizationEditMode
+                      ? "Завершить редактирование"
+                      : "Режим редактирования"}
+                  </button>
                 </div>
+              </div>
+
+              <div className="mt-5">
+                <label
+                  htmlFor="organization-search"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Поиск образовательной организации
+                </label>
+
+                <input
+                  id="organization-search"
+                  type="search"
+                  value={organizationSearch}
+                  onChange={(event) => {
+                    setOrganizationSearch(event.target.value);
+                    setPage(0);
+                  }}
+                  placeholder="Введите название школы или код ОО"
+                  className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+                />
+
+                {organizationSearch.trim() && (
+                  <p className="mt-2 text-sm text-slate-500">
+                    Найдено организаций: {totalElements}
+                  </p>
+                )}
               </div>
 
               {showCreateOrganizationForm && (
@@ -344,10 +518,15 @@ function MsuDetailContent() {
                 <div className="py-12 text-center">
                   <Building2 size={32} className="mx-auto text-slate-300" />
                   <p className="mt-3 font-medium text-slate-800">
-                    Образовательных организаций пока нет
+                    {organizationSearch.trim()
+                      ? "Организации не найдены"
+                      : "Образовательных организаций пока нет"}
                   </p>
+
                   <p className="mt-1 text-sm text-slate-500">
-                    Список появится после создания ОО в этом МСУ.
+                    {organizationSearch.trim()
+                      ? "Попробуйте изменить поисковый запрос."
+                      : "Список появится после создания ОО в этом МСУ."}
                   </p>
                 </div>
               ) : (
@@ -359,17 +538,130 @@ function MsuDetailContent() {
                         <th className="px-3 py-3 font-medium">
                           Название образовательной организации
                         </th>
+                        {organizationEditMode && (
+                          <th className="px-3 py-3 font-medium">Действия</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {organizations.map((organization) => (
                         <tr key={organization.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-4 font-medium text-slate-700">
-                            {organization.code}
-                          </td>
-                          <td className="px-3 py-4 text-slate-900">
-                            {organization.name}
-                          </td>
+                          {editingOrganizationId === organization.id ? (
+                            <td
+                              colSpan={organizationEditMode ? 3 : 2}
+                              className="p-3"
+                            >
+                              <form
+                                onSubmit={saveEditingOrganization}
+                                className="grid gap-3 sm:grid-cols-2"
+                              >
+                                <label className="text-xs font-medium text-slate-600">
+                                  Код ОО
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    required
+                                    value={editingOrganizationCode}
+                                    onChange={(event) =>
+                                      setEditingOrganizationCode(
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+                                  />
+                                </label>
+
+                                <label className="text-xs font-medium text-slate-600">
+                                  Название ОО
+                                  <input
+                                    type="text"
+                                    maxLength={500}
+                                    required
+                                    value={editingOrganizationName}
+                                    onChange={(event) =>
+                                      setEditingOrganizationName(
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+                                  />
+                                </label>
+
+                                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                                  <button
+                                    type="submit"
+                                    disabled={
+                                      updateOrganizationMutation.isPending
+                                    }
+                                    className="rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                                  >
+                                    {updateOrganizationMutation.isPending
+                                      ? "Сохраняем..."
+                                      : "Сохранить"}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={cancelEditingOrganization}
+                                    disabled={
+                                      updateOrganizationMutation.isPending
+                                    }
+                                    className={buttonClass}
+                                  >
+                                    Отмена
+                                  </button>
+                                </div>
+                              </form>
+                            </td>
+                          ) : (
+                            <>
+                              <td className="px-3 py-4 font-medium text-slate-700">
+                                {organization.code}
+                              </td>
+
+                              <td className="px-3 py-4 text-slate-900">
+                                {organization.name}
+                              </td>
+
+                              {organizationEditMode && (
+                                <td className="px-3 py-4">
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        startEditingOrganization(organization)
+                                      }
+                                      disabled={
+                                        deleteOrganizationMutation.isPending
+                                      }
+                                      className={buttonClass}
+                                      aria-label={`Редактировать ${organization.name}`}
+                                    >
+                                      <Pencil size={15} />
+                                      Изменить
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        confirmDeleteOrganization(organization)
+                                      }
+                                      disabled={
+                                        deleteOrganizationMutation.isPending ||
+                                        updateOrganizationMutation.isPending
+                                      }
+                                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                      aria-label={`Удалить ${organization.name}`}
+                                    >
+                                      <Trash2 size={15} />
+                                      Удалить
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
