@@ -194,13 +194,21 @@ function MsuDetailContent() {
       ),
 
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["region-admin", "msu", msuId, "educational-organizations"],
-      });
+      toast.success("Образовательная организация создана.");
 
       setOrganizationCode("");
       setOrganizationName("");
       setShowCreateOrganizationForm(false);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "msu", msuId, "educational-organizations"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось создать ОО", {
+        description: getErrorMessage(error),
+      });
     },
   });
 
