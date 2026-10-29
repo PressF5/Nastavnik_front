@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-export type DashboardSection = "overview" | "msus" | "requests" | "accounts";
+export type DashboardSection =
+  "overview" | "msus" | "requests" | "accounts" | "oo-accounts";
 
 type DashboardShellContextValue = {
   section: DashboardSection;

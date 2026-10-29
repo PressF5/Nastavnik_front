@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore, type AuthUser } from "@/store/auth-store";
+import Link from "next/link";
 
 type FormSubmitEvent = Parameters<
   NonNullable<ComponentProps<"form">["onSubmit"]>
@@ -25,12 +26,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   useEffect(() => {
     if (isInitialized && user) {
       router.replace("/dashboard");
     }
   }, [isInitialized, user, router]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    setRegistrationSuccess(searchParams.get("registered") === "1");
+  }, []);
 
   async function handleSubmit(event: FormSubmitEvent) {
     event.preventDefault();
@@ -98,7 +106,15 @@ export default function LoginPage() {
             Введите email и пароль своей учётной записи.
           </p>
         </div>
-
+        {registrationSuccess && (
+          <div
+            role="status"
+            className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+          >
+            Учётная запись создана. После подтверждения администратором вы
+            сможете войти в систему.
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-5">
           <fieldset disabled={isSubmitting} className="space-y-5">
             <label className="block text-sm font-medium text-slate-700">
@@ -162,6 +178,15 @@ export default function LoginPage() {
             {isSubmitting ? "Выполняется вход..." : "Войти"}
           </button>
         </form>
+        <p className="mt-5 text-center text-sm text-slate-600">
+          Нет учётной записи?{" "}
+          <Link
+            href="/register"
+            className="font-semibold text-[#457B9D] hover:underline"
+          >
+            Зарегистрироваться
+          </Link>
+        </p>
       </section>
     </main>
   );

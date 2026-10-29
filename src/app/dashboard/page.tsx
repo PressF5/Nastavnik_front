@@ -242,6 +242,19 @@ export default function DashboardPage() {
     enabled: isInitialized && isRegionAdmin,
   });
 
+  const ooAccountsQuery = useQuery({
+    queryKey: ["region-admin", "oo-admins"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "OO_ADMIN",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
   const refreshDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -255,6 +268,9 @@ export default function DashboardPage() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["region-admin", "pending-oo-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "oo-admins"],
       }),
     ]);
   };
@@ -350,6 +366,36 @@ export default function DashboardPage() {
     },
   });
 
+  const blockMutation = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: "block" | "unblock" }) =>
+      apiFetch<AdminUser>(`/api/admin/users/${id}/${action}`, {
+        method: "PATCH",
+      }),
+
+    onSuccess: async (_, variables) => {
+      toast.success(
+        variables.action === "block"
+          ? "Учётная запись заблокирована."
+          : "Учётная запись разблокирована.",
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["region-admin", "msu-admins"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["region-admin", "oo-admins"],
+        }),
+      ]);
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось изменить блокировку", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   async function handleCreateMsu(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -434,7 +480,8 @@ export default function DashboardPage() {
     msusQuery.isFetching ||
     pendingQuery.isFetching ||
     pendingOoAdminsQuery.isFetching ||
-    accountsQuery.isFetching;
+    accountsQuery.isFetching ||
+    ooAccountsQuery.isFetching;
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
@@ -453,11 +500,11 @@ export default function DashboardPage() {
             Обновить
           </button>
         </div>
-
         {(msusQuery.isError ||
           pendingQuery.isError ||
           pendingOoAdminsQuery.isError ||
-          accountsQuery.isError) && (
+          accountsQuery.isError ||
+          ooAccountsQuery.isError) && (
           <div
             role="alert"
             className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"
@@ -473,6 +520,7 @@ export default function DashboardPage() {
                 void pendingQuery.refetch();
                 void accountsQuery.refetch();
                 void pendingOoAdminsQuery.refetch();
+                void ooAccountsQuery.refetch();
               }}
               className="font-semibold underline"
             >
@@ -480,7 +528,6 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
-
         {section === "overview" && (
           <>
             <section>
@@ -572,7 +619,6 @@ export default function DashboardPage() {
             </section>
           </>
         )}
-
         {section === "msus" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -887,7 +933,6 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-
         {section === "requests" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <h3 className="font-semibold text-[#1D3557]">
@@ -978,6 +1023,120 @@ export default function DashboardPage() {
               )}
           </section>
         )}
+        {section === "oo-accounts" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h3 className="font-semibold text-[#1D3557]">
+              Администраторы образовательных организаций
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Управление учётными записями администраторов ОО в пределах твоего
+              региона.
+            </p>
+
+            {ooAccountsQuery.isPending ? (
+              <p className="py-8 text-sm text-slate-500">
+                Загружаем список администраторов ОО...
+              </p>
+            ) : ooAccountsQuery.isError ? (
+              <div className="py-8">
+                <p role="alert" className="text-sm text-red-700">
+                  Не удалось загрузить список администраторов ОО.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void ooAccountsQuery.refetch()}
+                  className={`${buttonSecondary} mt-3`}
+                >
+                  Повторить
+                </button>
+              </div>
+            ) : (ooAccountsQuery.data?.content ?? []).length === 0 ? (
+              <p className="py-10 text-sm text-slate-500">
+                Администраторы ОО пока не зарегистрированы.
+              </p>
+            ) : (
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-187.5 text-left text-sm">
+                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-3 py-3 font-medium">ФИО</th>
+                      <th className="px-3 py-3 font-medium">Email</th>
+                      <th className="px-3 py-3 font-medium">Статус</th>
+                      <th className="px-3 py-3 font-medium">Блокировка</th>
+                      <th className="px-3 py-3 font-medium">Действия</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100">
+                    {(ooAccountsQuery.data?.content ?? []).map((admin) => (
+                      <tr key={admin.id} className="hover:bg-slate-50">
+                        <td className="px-3 py-4 font-medium text-slate-900">
+                          {fullName(admin)}
+                        </td>
+
+                        <td className="px-3 py-4 text-slate-600">
+                          {admin.email}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          <StatusBadge status={admin.accountStatus} />
+                        </td>
+
+                        <td className="px-3 py-4">
+                          {admin.isBlock ? (
+                            <span className="font-medium text-red-700">
+                              Заблокирован
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">
+                              Не заблокирован
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          {admin.accountStatus === "ACCEPTED" && (
+                            <button
+                              type="button"
+                              disabled={blockMutation.isPending}
+                              onClick={() => {
+                                const action = admin.isBlock
+                                  ? "unblock"
+                                  : "block";
+
+                                const message = admin.isBlock
+                                  ? `Разблокировать учётную запись ${fullName(admin)}?`
+                                  : `Заблокировать учётную запись ${fullName(admin)}?`;
+
+                                if (window.confirm(message)) {
+                                  blockMutation.mutate({
+                                    id: admin.id,
+                                    action,
+                                  });
+                                }
+                              }}
+                              className={
+                                admin.isBlock
+                                  ? "rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                                  : "rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              }
+                            >
+                              {admin.isBlock
+                                ? "Разблокировать"
+                                : "Заблокировать"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
 
         {section === "accounts" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -1003,6 +1162,7 @@ export default function DashboardPage() {
                       <th className="px-3 py-3 font-medium">Email</th>
                       <th className="px-3 py-3 font-medium">Статус</th>
                       <th className="px-3 py-3 font-medium">Блокировка</th>
+                      <th className="px-3 py-3 font-medium">Действия</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1024,6 +1184,38 @@ export default function DashboardPage() {
                             </span>
                           ) : (
                             <span className="text-slate-600">Нет</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-4">
+                          {admin.accountStatus === "ACCEPTED" && (
+                            <button
+                              type="button"
+                              disabled={blockMutation.isPending}
+                              onClick={() => {
+                                const action = admin.isBlock
+                                  ? "unblock"
+                                  : "block";
+                                const message = admin.isBlock
+                                  ? `Разблокировать учётную запись ${fullName(admin)}?`
+                                  : `Заблокировать учётную запись ${fullName(admin)}?`;
+
+                                if (window.confirm(message)) {
+                                  blockMutation.mutate({
+                                    id: admin.id,
+                                    action,
+                                  });
+                                }
+                              }}
+                              className={
+                                admin.isBlock
+                                  ? "rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                                  : "rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              }
+                            >
+                              {admin.isBlock
+                                ? "Разблокировать"
+                                : "Заблокировать"}
+                            </button>
                           )}
                         </td>
                       </tr>

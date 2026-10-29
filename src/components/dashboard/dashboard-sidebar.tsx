@@ -32,6 +32,7 @@ const navigation: {
   { id: "msus", label: "Мой регион: МСУ", icon: Building2 },
   { id: "requests", label: "Заявки", icon: ClipboardCheck },
   { id: "accounts", label: "Администраторы МСУ", icon: UserRound },
+  { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },
 ];
 
 export function DashboardSidebar({
