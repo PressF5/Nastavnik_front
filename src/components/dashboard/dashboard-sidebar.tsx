@@ -84,7 +84,7 @@ export function DashboardSidebar({
           "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white",
           "transition-[width,transform] duration-200",
           "lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0",
-          collapsed ? "lg:w-[76px]" : "lg:w-64",
+          collapsed ? "lg:w-19" : "lg:w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         ].join(" ")}
       >
