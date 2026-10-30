@@ -30,6 +30,14 @@ type Msu = {
   regionId: number;
 };
 
+type EducationalOrganization = {
+  id: number;
+  code: number;
+  name: string;
+  msuId: number;
+  msuName: string;
+};
+
 type AdminUser = {
   id: number;
   email: string;
@@ -126,6 +134,11 @@ export default function DashboardPage() {
   const [editingMsuId, setEditingMsuId] = useState<number | null>(null);
   const [editingMsuCode, setEditingMsuCode] = useState("");
   const [editingMsuName, setEditingMsuName] = useState("");
+
+  const [organizationSearch, setOrganizationSearch] = useState("");
+  const [organizationPage, setOrganizationPage] = useState(0);
+  const [organizationPageSize, setOrganizationPageSize] = useState(10);
+
   const { section, setSection } = useDashboardShell();
 
   function startEditingMsu(msu: Msu) {
@@ -196,6 +209,29 @@ export default function DashboardPage() {
           size: msuPageSize,
         },
       }),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
+  // Все образовательные организации текущего региона.
+  const organizationsQuery = useQuery({
+    queryKey: [
+      "region-admin",
+      "educational-organizations",
+      organizationSearch,
+      organizationPage,
+      organizationPageSize,
+    ],
+    queryFn: () =>
+      apiFetch<SpringPage<EducationalOrganization>>(
+        "/api/admin/educational-organizations",
+        {
+          params: {
+            search: organizationSearch,
+            page: organizationPage,
+            size: organizationPageSize,
+          },
+        },
+      ),
     enabled: isInitialized && isRegionAdmin,
   });
 
@@ -272,6 +308,9 @@ export default function DashboardPage() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["region-admin", "oo-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "educational-organizations"],
       }),
     ]);
   };
@@ -484,10 +523,15 @@ export default function DashboardPage() {
 
   const isRefreshing =
     msusQuery.isFetching ||
+    organizationsQuery.isFetching ||
     pendingQuery.isFetching ||
     pendingOoAdminsQuery.isFetching ||
     accountsQuery.isFetching ||
     ooAccountsQuery.isFetching;
+
+  const organizations = organizationsQuery.data?.content ?? [];
+  const totalOrganizations = organizationsQuery.data?.totalElements ?? 0;
+  const allOoAdmins = ooAccountsQuery.data?.content ?? [];
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
@@ -507,6 +551,7 @@ export default function DashboardPage() {
           </button>
         </div>
         {(msusQuery.isError ||
+          organizationsQuery.isError ||
           pendingQuery.isError ||
           pendingOoAdminsQuery.isError ||
           accountsQuery.isError ||
@@ -527,6 +572,7 @@ export default function DashboardPage() {
                 void accountsQuery.refetch();
                 void pendingOoAdminsQuery.refetch();
                 void ooAccountsQuery.refetch();
+                void organizationsQuery.refetch();
               }}
               className="font-semibold underline"
             >
@@ -553,16 +599,14 @@ export default function DashboardPage() {
                 description="Созданные муниципальные управления"
                 icon={<Building2 size={21} />}
               />
+
               <StatCard
-                title="Ожидают решения"
-                value={
-                  pendingQuery.isPending || pendingOoAdminsQuery.isPending
-                    ? "—"
-                    : totalPendingAdmins
-                }
-                description="Заявки администраторов МСУ и ОО"
-                icon={<ClipboardCheck size={21} />}
+                title="ОО в регионе"
+                value={organizationsQuery.isPending ? "—" : totalOrganizations}
+                description="Все образовательные организации региона"
+                icon={<Building2 size={21} />}
               />
+
               <StatCard
                 title="Администраторы МСУ"
                 value={
@@ -572,6 +616,28 @@ export default function DashboardPage() {
                 }
                 description="Учётные записи в твоём регионе"
                 icon={<Users size={21} />}
+              />
+
+              <StatCard
+                title="Администраторы ОО"
+                value={
+                  ooAccountsQuery.isPending
+                    ? "—"
+                    : (ooAccountsQuery.data?.totalElements ?? 0)
+                }
+                description="Учётные записи образовательных организаций региона"
+                icon={<Users size={21} />}
+              />
+
+              <StatCard
+                title="Ожидают решения"
+                value={
+                  pendingQuery.isPending || pendingOoAdminsQuery.isPending
+                    ? "—"
+                    : totalPendingAdmins
+                }
+                description="Заявки администраторов МСУ и ОО"
+                icon={<ClipboardCheck size={21} />}
               />
             </section>
 
@@ -939,6 +1005,160 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
+
+        {section === "region-organizations" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div>
+              <h3 className="font-semibold text-[#1D3557]">
+                Образовательные организации региона
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Все образовательные организации, относящиеся к МСУ твоего
+                региона
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <label className="relative block w-full sm:max-w-md">
+                <Search
+                  size={17}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="search"
+                  value={organizationSearch}
+                  onChange={(event) => {
+                    setOrganizationSearch(event.target.value);
+                    setOrganizationPage(0);
+                  }}
+                  placeholder="Поиск по коду или названию ОО"
+                  className={`${inputClass} mt-0 pl-9`}
+                />
+              </label>
+            </div>
+
+            {organizationsQuery.isPending ? (
+              <p className="py-10 text-center text-sm text-slate-500">
+                Загружаем образовательные организации...
+              </p>
+            ) : organizationsQuery.isError ? (
+              <p
+                role="alert"
+                className="py-10 text-center text-sm text-red-700"
+              >
+                Не удалось загрузить образовательные организации.
+              </p>
+            ) : organizations.length === 0 ? (
+              <div className="py-12 text-center">
+                <Building2 size={32} className="mx-auto text-slate-300" />
+                <p className="mt-3 font-medium text-slate-800">
+                  {organizationSearch
+                    ? "ОО по вашему запросу не найдены"
+                    : "В регионе пока нет образовательных организаций"}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {organizationSearch
+                    ? "Измените поисковый запрос."
+                    : "Создайте ОО в одном из МСУ региона."}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mt-5 overflow-x-auto">
+                  <table className="w-full min-w-150 text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th className="px-3 py-3 font-semibold">Код ОО</th>
+                        <th className="px-3 py-3 font-semibold">Название ОО</th>
+                        <th className="px-3 py-3 font-semibold">МСУ</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-100">
+                      {organizations.map((organization) => (
+                        <tr key={organization.id} className="hover:bg-slate-50">
+                          <td className="px-3 py-3">{organization.code}</td>
+                          <td className="px-3 py-3">{organization.name}</td>
+                          <td className="px-3 py-3">{organization.msuName}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <label htmlFor="organization-page-size">
+                      Записей на странице:
+                    </label>
+                    <select
+                      id="organization-page-size"
+                      value={organizationPageSize}
+                      onChange={(event) => {
+                        setOrganizationPageSize(Number(event.target.value));
+                        setOrganizationPage(0);
+                      }}
+                      className="rounded-lg border border-slate-300 bg-white px-2 py-2"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+
+                    <span>Всего: {totalOrganizations}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOrganizationPage((page) => Math.max(0, page - 1))
+                      }
+                      disabled={
+                        organizationPage === 0 || organizationsQuery.isFetching
+                      }
+                      className={buttonSecondary}
+                    >
+                      <ChevronLeft size={16} />
+                      Назад
+                    </button>
+
+                    <span className="min-w-24 text-center text-sm text-slate-600">
+                      Страница{" "}
+                      {organizationsQuery.data.totalPages === 0
+                        ? 0
+                        : organizationPage + 1}{" "}
+                      из {organizationsQuery.data.totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOrganizationPage((page) =>
+                          Math.min(
+                            organizationsQuery.data.totalPages - 1,
+                            page + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        organizationPage >=
+                          organizationsQuery.data.totalPages - 1 ||
+                        organizationsQuery.data.totalPages === 0 ||
+                        organizationsQuery.isFetching
+                      }
+                      className={buttonSecondary}
+                    >
+                      Далее
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
         {section === "requests" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <h3 className="font-semibold text-[#1D3557]">

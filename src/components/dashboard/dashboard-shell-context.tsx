@@ -3,7 +3,13 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type DashboardSection =
-  "overview" | "msus" | "organizations" | "requests" | "accounts" | "oo-accounts";
+  | "overview"
+  | "msus"
+  | "region-organizations"
+  | "organizations"
+  | "requests"
+  | "accounts"
+  | "oo-accounts";
 
 type DashboardShellContextValue = {
   section: DashboardSection;
