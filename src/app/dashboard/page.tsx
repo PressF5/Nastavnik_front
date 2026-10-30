@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
+import { MsuAdminDashboard } from "@/components/dashboard/msu-admin-dashboard";
 
 type Msu = {
   id: number;
@@ -436,6 +437,10 @@ export default function DashboardPage() {
         <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
       </main>
     );
+  }
+
+  if (user.role === "MSU_ADMIN") {
+    return <MsuAdminDashboard />;
   }
 
   if (!isRegionAdmin) {
