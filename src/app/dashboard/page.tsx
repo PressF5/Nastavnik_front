@@ -47,6 +47,8 @@ type AdminUser = {
   isBlock: boolean;
   role: string;
   accountStatus: "PENDING" | "ACCEPTED" | "REJECTED";
+  educationalOrganizationName: string | null;
+  msuName: string | null;
 };
 
 type SpringPage<T> = {
@@ -821,128 +823,132 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full table-fixed text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-3 py-3 font-medium">Код</th>
-                      <th className="px-3 py-3 font-medium">Название МСУ</th>
-                      {msuEditMode && (
-                        <th className="px-3 py-3 font-medium">Действия</th>
-                      )}
-                    </tr>
-                  </thead>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {msus.map((msu) => (
+                  <article
+                    key={msu.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                  >
+                    {editingMsuId === msu.id ? (
+                      <form
+                        onSubmit={saveEditingMsu}
+                        className="flex flex-col gap-4"
+                      >
+                        <div>
+                          <h4 className="font-semibold text-[#1D3557]">
+                            Редактирование МСУ
+                          </h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Измени код или название муниципального управления
+                          </p>
+                        </div>
 
-                  <tbody className="divide-y divide-slate-100">
-                    {msus.map((msu) => (
-                      <tr key={msu.id} className="hover:bg-slate-50">
-                        {editingMsuId === msu.id ? (
-                          <td colSpan={msuEditMode ? 3 : 2} className="p-3">
-                            <form
-                              onSubmit={saveEditingMsu}
-                              className="grid gap-3 sm:grid-cols-2"
+                        <label className="text-sm font-medium text-slate-600">
+                          Код МСУ
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            required
+                            value={editingMsuCode}
+                            onChange={(event) =>
+                              setEditingMsuCode(event.target.value)
+                            }
+                            className={inputClass}
+                          />
+                        </label>
+
+                        <label className="text-sm font-medium text-slate-600">
+                          Название МСУ
+                          <input
+                            type="text"
+                            maxLength={500}
+                            required
+                            value={editingMsuName}
+                            onChange={(event) =>
+                              setEditingMsuName(event.target.value)
+                            }
+                            className={inputClass}
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="submit"
+                            disabled={updateMsuMutation.isPending}
+                            className={buttonPrimary}
+                          >
+                            {updateMsuMutation.isPending
+                              ? "Сохраняем..."
+                              : "Сохранить"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={cancelEditingMsu}
+                            disabled={updateMsuMutation.isPending}
+                            className={buttonSecondary}
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                              <Building2 size={22} />
+                            </div>
+
+                            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                              Код: {msu.code}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(`/dashboard/msus/${msu.id}`)
+                            }
+                            className="mt-4 text-left text-base font-semibold text-[#1D3557] transition hover:text-[#457B9D] hover:underline"
+                          >
+                            {msu.name}
+                          </button>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            Муниципальное управление
+                          </p>
+                        </div>
+
+                        {msuEditMode && (
+                          <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => startEditingMsu(msu)}
+                              className={buttonSecondary}
+                              aria-label={`Редактировать ${msu.name}`}
                             >
-                              <label className="text-xs font-medium text-slate-600">
-                                Код
-                                <input
-                                  type="number"
-                                  min="1"
-                                  step="1"
-                                  required
-                                  value={editingMsuCode}
-                                  onChange={(event) =>
-                                    setEditingMsuCode(event.target.value)
-                                  }
-                                  className={inputClass}
-                                />
-                              </label>
+                              <Pencil size={15} />
+                              Редактировать
+                            </button>
 
-                              <label className="text-xs font-medium text-slate-600">
-                                Название
-                                <input
-                                  type="text"
-                                  maxLength={500}
-                                  required
-                                  value={editingMsuName}
-                                  onChange={(event) =>
-                                    setEditingMsuName(event.target.value)
-                                  }
-                                  className={inputClass}
-                                />
-                              </label>
-
-                              <div className="flex flex-wrap gap-2 sm:col-span-2">
-                                <button
-                                  type="submit"
-                                  disabled={updateMsuMutation.isPending}
-                                  className={buttonPrimary}
-                                >
-                                  {updateMsuMutation.isPending
-                                    ? "Сохраняем..."
-                                    : "Сохранить"}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={cancelEditingMsu}
-                                  disabled={updateMsuMutation.isPending}
-                                  className={buttonSecondary}
-                                >
-                                  Отмена
-                                </button>
-                              </div>
-                            </form>
-                          </td>
-                        ) : (
-                          <>
-                            <td className="px-3 py-4 font-medium text-slate-700">
-                              {msu.code}
-                            </td>
-
-                            <td className="px-3 py-4">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  router.push(`/dashboard/msus/${msu.id}`)
-                                }
-                                className="text-left font-medium text-[#1D3557] hover:text-[#457B9D] hover:underline"
-                              >
-                                {msu.name}
-                              </button>
-                            </td>
-
-                            {msuEditMode && (
-                              <td className="px-3 py-4">
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => startEditingMsu(msu)}
-                                    className={buttonSecondary}
-                                    aria-label={`Редактировать ${msu.name}`}
-                                  >
-                                    <Pencil size={15} />
-                                    Изменить
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => confirmDeleteMsu(msu)}
-                                    disabled={deleteMsuMutation.isPending}
-                                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                                    aria-label={`Удалить ${msu.name}`}
-                                  >
-                                    <Trash2 size={15} />
-                                    Удалить
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </>
+                            <button
+                              type="button"
+                              onClick={() => confirmDeleteMsu(msu)}
+                              disabled={deleteMsuMutation.isPending}
+                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Удалить ${msu.name}`}
+                            >
+                              <Trash2 size={15} />
+                              Удалить
+                            </button>
+                          </div>
                         )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </>
+                    )}
+                  </article>
+                ))}
               </div>
             )}
 
@@ -1064,26 +1070,39 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-150 text-left text-sm">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-3 py-3 font-semibold">Код ОО</th>
-                        <th className="px-3 py-3 font-semibold">Название ОО</th>
-                        <th className="px-3 py-3 font-semibold">МСУ</th>
-                      </tr>
-                    </thead>
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {organizations.map((organization) => (
+                    <article
+                      key={organization.id}
+                      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Building2 size={22} />
+                        </div>
 
-                    <tbody className="divide-y divide-slate-100">
-                      {organizations.map((organization) => (
-                        <tr key={organization.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-3">{organization.code}</td>
-                          <td className="px-3 py-3">{organization.name}</td>
-                          <td className="px-3 py-3">{organization.msuName}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                          Код: {organization.code}
+                        </span>
+                      </div>
+
+                      <div className="mt-4">
+                        <h4 className="font-semibold leading-6 text-[#1D3557]">
+                          {organization.name}
+                        </h4>
+
+                        <div className="mt-4 border-t border-slate-100 pt-3">
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Муниципальное управление
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {organization.msuName}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
 
                 <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1284,11 +1303,15 @@ export default function DashboardPage() {
               </p>
             ) : (
               <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-187.5 text-left text-sm">
+                <table className="w-full min-w-275 text-left text-sm">
                   <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-3 py-3 font-medium">ФИО</th>
                       <th className="px-3 py-3 font-medium">Email</th>
+                      <th className="px-3 py-3 font-medium">
+                        Образовательная организация
+                      </th>
+                      <th className="px-3 py-3 font-medium">МСУ</th>
                       <th className="px-3 py-3 font-medium">Статус</th>
                       <th className="px-3 py-3 font-medium">Блокировка</th>
                       <th className="px-3 py-3 font-medium">Действия</th>
@@ -1304,6 +1327,14 @@ export default function DashboardPage() {
 
                         <td className="px-3 py-4 text-slate-600">
                           {admin.email}
+                        </td>
+
+                        <td className="px-3 py-4 text-slate-600">
+                          {admin.educationalOrganizationName ?? "—"}
+                        </td>
+
+                        <td className="px-3 py-4 text-slate-600">
+                          {admin.msuName ?? "—"}
                         </td>
 
                         <td className="px-3 py-4">
