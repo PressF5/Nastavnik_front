@@ -23,7 +23,7 @@ type DashboardSidebarProps = {
   isLoggingOut: boolean;
 };
 
-const navigation: {
+const regionNavigation: {
   id: DashboardSection;
   label: string;
   icon: typeof LayoutDashboard;
@@ -35,6 +35,17 @@ const navigation: {
   { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },
 ];
 
+const msuNavigation: {
+  id: DashboardSection;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  { id: "overview", label: "Обзор", icon: LayoutDashboard },
+  { id: "organizations", label: "Образовательные организации", icon: Building2 },
+  { id: "requests", label: "Заявки администраторов ОО", icon: ClipboardCheck },
+  { id: "oo-accounts", label: "Администраторы ОО", icon: UserRound },
+];
+
 export function DashboardSidebar({
   onLogout,
   isLoggingOut,
@@ -42,6 +53,7 @@ export function DashboardSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
+  const navigation = user?.role === "MSU_ADMIN" ? msuNavigation : regionNavigation;
 
   const {
     section,
@@ -96,7 +108,7 @@ export function DashboardSidebar({
                 НАСТАВНИК+
               </p>
               <p className="mt-1 text-sm font-semibold text-[#1D3557]">
-                Управление регионом
+                {user?.role === "MSU_ADMIN" ? "Управление МСУ" : "Управление регионом"}
               </p>
             </div>
           )}
