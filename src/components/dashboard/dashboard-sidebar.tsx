@@ -29,8 +29,8 @@ const regionNavigation: {
   icon: typeof LayoutDashboard;
 }[] = [
   { id: "overview", label: "Обзор", icon: LayoutDashboard },
-  { id: "msus", label: "Мой регион: МСУ", icon: Building2 },
-  { id: "region-organizations", label: "Мой регион: ОО", icon: Building2 },
+  { id: "msus", label: "Управление МСУ и ОО", icon: Building2 },
+  { id: "region-organizations", label: "Реестр ОО", icon: Building2 },
   { id: "requests", label: "Заявки", icon: ClipboardCheck },
   { id: "accounts", label: "Администраторы МСУ", icon: UserRound },
   { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },

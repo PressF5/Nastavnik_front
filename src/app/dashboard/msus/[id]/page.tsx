@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Plus,
   Search,
   Trash2,
 } from "lucide-react";
@@ -381,8 +382,8 @@ function MsuDetailContent() {
                     }
                     className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#27476f]"
                   >
-                    <Building2 size={16} />
-                    Добавить ОО
+                    <Plus size={17} />
+                    Создать ОО
                   </button>
                 </div>
               </div>
