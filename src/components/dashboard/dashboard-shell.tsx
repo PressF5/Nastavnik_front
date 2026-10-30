@@ -11,6 +11,7 @@ import {
   useDashboardShell,
 } from "@/components/dashboard/dashboard-shell-context";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { useQueryClient } from "@tanstack/react-query";
 
 function DashboardShellContent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -21,6 +22,8 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
   const { collapsed, setCollapsed, setMobileOpen } = useDashboardShell();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setMobileOpen(false);
@@ -36,6 +39,7 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Не удалось завершить сессию на сервере.", error);
     } finally {
+      queryClient.clear();
       clearAuth();
       router.replace("/login");
       setIsLoggingOut(false);

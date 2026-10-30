@@ -426,6 +426,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Не удалось завершить сессию на сервере.", error);
     } finally {
+      queryClient.clear();
       clearAuth();
       router.replace("/login");
     }
