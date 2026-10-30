@@ -127,7 +127,7 @@ export function MsuAdminDashboard() {
   const [organizationPage, setOrganizationPage] = useState(0);
 
   const msuQuery = useQuery({
-    queryKey: ["msu-admin", "current-msu"],
+    queryKey: ["msu-admin", user?.id, "current-msu"],
     queryFn: () => apiFetch<Msu>("/api/admin/msus/current"),
     enabled: user?.role === "MSU_ADMIN",
   });
@@ -135,6 +135,7 @@ export function MsuAdminDashboard() {
   const organizationsQuery = useQuery({
     queryKey: [
       "msu-admin",
+      user?.id,
       "organizations",
       organizationSearch,
       organizationPage,
@@ -154,7 +155,7 @@ export function MsuAdminDashboard() {
   });
 
   const pendingAdminsQuery = useQuery({
-    queryKey: ["msu-admin", "pending-oo-admins"],
+    queryKey: ["msu-admin", user?.id, "pending-oo-admins"],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
         params: { role: "OO_ADMIN", status: "PENDING", page: 0, size: 100 },
@@ -163,7 +164,7 @@ export function MsuAdminDashboard() {
   });
 
   const accountsQuery = useQuery({
-    queryKey: ["msu-admin", "oo-admins"],
+    queryKey: ["msu-admin", user?.id, "oo-admins"],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
         params: { role: "OO_ADMIN", page: 0, size: 100 },
@@ -173,14 +174,18 @@ export function MsuAdminDashboard() {
 
   const invalidateDashboard = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["msu-admin", "current-msu"] }),
       queryClient.invalidateQueries({
-        queryKey: ["msu-admin", "organizations"],
+        queryKey: ["msu-admin", user?.id, "current-msu"],
       }),
       queryClient.invalidateQueries({
-        queryKey: ["msu-admin", "pending-oo-admins"],
+        queryKey: ["msu-admin", user?.id, "organizations"],
       }),
-      queryClient.invalidateQueries({ queryKey: ["msu-admin", "oo-admins"] }),
+      queryClient.invalidateQueries({
+        queryKey: ["msu-admin", user?.id, "pending-oo-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["msu-admin", user?.id, "oo-admins"],
+      }),
     ]);
   };
 
