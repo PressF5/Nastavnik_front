@@ -4,6 +4,7 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
+  Check,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -14,6 +15,7 @@ import {
   Search,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -1180,46 +1182,105 @@ export default function DashboardPage() {
 
         {section === "requests" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h3 className="font-semibold text-[#1D3557]">
-              Заявки администраторов МСУ и ОО
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Подтверждай только заявки пользователей своего региона.
-            </p>
+            <div>
+              <h3 className="font-semibold text-[#1D3557]">
+                Заявки администраторов МСУ и ОО
+              </h3>
 
-            {pendingQuery.isPending ? (
+              <p className="mt-1 text-sm text-slate-500">
+                Проверяй данные пользователей и подтверждай регистрации в
+                пределах своего региона.
+              </p>
+            </div>
+
+            {pendingQuery.isPending || pendingOoAdminsQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">Загружаем заявки...</p>
+            ) : pendingQuery.isError || pendingOoAdminsQuery.isError ? (
+              <div className="py-8">
+                <p role="alert" className="text-sm text-red-700">
+                  Не удалось загрузить список заявок.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void pendingQuery.refetch();
+                    void pendingOoAdminsQuery.refetch();
+                  }}
+                  className={`${buttonSecondary} mt-3`}
+                >
+                  Повторить
+                </button>
+              </div>
             ) : pendingAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
                 Заявок на подтверждение нет.
               </p>
             ) : (
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {pendingAdmins.map((admin) => (
-                  <div
+                  <article
                     key={admin.id}
-                    className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
                   >
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-900">
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Users size={22} />
+                        </div>
+
+                        <StatusBadge status={admin.accountStatus} />
+                      </div>
+
+                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
                         {fullName(admin)}
-                      </p>
+                      </h4>
+
                       <p className="mt-1 break-all text-sm text-slate-500">
                         {admin.email}
                       </p>
-                      <p className="mt-1 text-sm font-medium text-[#457B9D]">
-                        {admin.role === "MSU_ADMIN"
-                          ? "Администратор МСУ"
-                          : admin.role === "OO_ADMIN"
-                            ? "Администратор образовательной организации"
-                            : admin.role}
-                      </p>
-                      <div className="mt-2">
-                        <StatusBadge status={admin.accountStatus} />
+
+                      <div className="mt-4">
+                        <span
+                          className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-medium ${
+                            admin.role === "MSU_ADMIN"
+                              ? "bg-indigo-50 text-indigo-700"
+                              : "bg-sky-50 text-sky-700"
+                          }`}
+                        >
+                          {admin.role === "MSU_ADMIN"
+                            ? "Администратор МСУ"
+                            : "Администратор ОО"}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Муниципальное управление
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {admin.msuName ?? "Не указано"}
+                          </p>
+                        </div>
+
+                        {admin.role === "OO_ADMIN" && (
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              Образовательная организация
+                            </p>
+
+                            <p className="mt-1 text-sm font-medium text-slate-700">
+                              {admin.educationalOrganizationName ??
+                                "Не указана"}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
                       <button
                         type="button"
                         onClick={() =>
@@ -1229,10 +1290,12 @@ export default function DashboardPage() {
                           })
                         }
                         disabled={approvalMutation.isPending}
-                        className={buttonPrimary}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
+                        <Check size={16} />
                         Подтвердить
                       </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1248,36 +1311,40 @@ export default function DashboardPage() {
                           }
                         }}
                         disabled={approvalMutation.isPending}
-                        className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
+                        <X size={16} />
                         Отклонить
                       </button>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             )}
 
             {pendingQuery.data &&
-              pendingQuery.data.totalElements > pendingAdmins.length && (
+              pendingOoAdminsQuery.data &&
+              totalPendingAdmins > pendingAdmins.length && (
                 <p className="mt-4 text-sm text-slate-500">
                   Показаны первые {pendingAdmins.length} заявок из{" "}
-                  {pendingQuery.data.totalElements}. Для обработки остальных
-                  понадобится добавить постраничную навигацию.
+                  {totalPendingAdmins}.
                 </p>
               )}
           </section>
         )}
+
         {section === "oo-accounts" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h3 className="font-semibold text-[#1D3557]">
-              Администраторы образовательных организаций
-            </h3>
+            <div>
+              <h3 className="font-semibold text-[#1D3557]">
+                Администраторы образовательных организаций
+              </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Управление учётными записями администраторов ОО в пределах твоего
-              региона.
-            </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Управление учётными записями администраторов ОО в пределах
+                твоего региона.
+              </p>
+            </div>
 
             {ooAccountsQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">
@@ -1297,99 +1364,112 @@ export default function DashboardPage() {
                   Повторить
                 </button>
               </div>
-            ) : (ooAccountsQuery.data?.content ?? []).length === 0 ? (
+            ) : allOoAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
                 Администраторы ОО пока не зарегистрированы.
               </p>
             ) : (
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-275 text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-3 py-3 font-medium">ФИО</th>
-                      <th className="px-3 py-3 font-medium">Email</th>
-                      <th className="px-3 py-3 font-medium">
-                        Образовательная организация
-                      </th>
-                      <th className="px-3 py-3 font-medium">МСУ</th>
-                      <th className="px-3 py-3 font-medium">Статус</th>
-                      <th className="px-3 py-3 font-medium">Блокировка</th>
-                      <th className="px-3 py-3 font-medium">Действия</th>
-                    </tr>
-                  </thead>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {allOoAdmins.map((admin) => (
+                  <article
+                    key={admin.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Building2 size={22} />
+                        </div>
 
-                  <tbody className="divide-y divide-slate-100">
-                    {(ooAccountsQuery.data?.content ?? []).map((admin) => (
-                      <tr key={admin.id} className="hover:bg-slate-50">
-                        <td className="px-3 py-4 font-medium text-slate-900">
-                          {fullName(admin)}
-                        </td>
+                        <StatusBadge status={admin.accountStatus} />
+                      </div>
 
-                        <td className="px-3 py-4 text-slate-600">
-                          {admin.email}
-                        </td>
+                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
+                        {fullName(admin)}
+                      </h4>
 
-                        <td className="px-3 py-4 text-slate-600">
-                          {admin.educationalOrganizationName ?? "—"}
-                        </td>
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {admin.email}
+                      </p>
 
-                        <td className="px-3 py-4 text-slate-600">
-                          {admin.msuName ?? "—"}
-                        </td>
+                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Образовательная организация
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {admin.educationalOrganizationName ?? "Не указана"}
+                          </p>
+                        </div>
 
-                        <td className="px-3 py-4">
-                          <StatusBadge status={admin.accountStatus} />
-                        </td>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Муниципальное управление
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {admin.msuName ?? "Не указано"}
+                          </p>
+                        </div>
 
-                        <td className="px-3 py-4">
-                          {admin.isBlock ? (
-                            <span className="font-medium text-red-700">
-                              Заблокирован
-                            </span>
-                          ) : (
-                            <span className="text-slate-600">
-                              Не заблокирован
-                            </span>
-                          )}
-                        </td>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Состояние учётной записи
+                          </p>
 
-                        <td className="px-3 py-4">
-                          {admin.accountStatus === "ACCEPTED" && (
-                            <button
-                              type="button"
-                              disabled={blockMutation.isPending}
-                              onClick={() => {
-                                const action = admin.isBlock
-                                  ? "unblock"
-                                  : "block";
+                          <div className="mt-2 flex items-center gap-2">
+                            <span
+                              className={`size-2 rounded-full ${
+                                admin.isBlock ? "bg-red-500" : "bg-emerald-500"
+                              }`}
+                            />
 
-                                const message = admin.isBlock
-                                  ? `Разблокировать учётную запись ${fullName(admin)}?`
-                                  : `Заблокировать учётную запись ${fullName(admin)}?`;
-
-                                if (window.confirm(message)) {
-                                  blockMutation.mutate({
-                                    id: admin.id,
-                                    action,
-                                  });
-                                }
-                              }}
-                              className={
+                            <span
+                              className={`text-sm font-medium ${
                                 admin.isBlock
-                                  ? "rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                                  : "rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              }
+                                  ? "text-red-700"
+                                  : "text-emerald-700"
+                              }`}
                             >
                               {admin.isBlock
-                                ? "Разблокировать"
-                                : "Заблокировать"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                                ? "Заблокирован"
+                                : "Не заблокирован"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {admin.accountStatus === "ACCEPTED" && (
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <button
+                          type="button"
+                          disabled={blockMutation.isPending}
+                          onClick={() => {
+                            const action = admin.isBlock ? "unblock" : "block";
+
+                            const message = admin.isBlock
+                              ? `Разблокировать учётную запись ${fullName(admin)}?`
+                              : `Заблокировать учётную запись ${fullName(admin)}?`;
+
+                            if (window.confirm(message)) {
+                              blockMutation.mutate({
+                                id: admin.id,
+                                action,
+                              });
+                            }
+                          }}
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            admin.isBlock
+                              ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              : "border-red-200 text-red-700 hover:bg-red-50"
+                          }`}
+                        >
+                          {admin.isBlock ? "Разблокировать" : "Заблокировать"}
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
               </div>
             )}
           </section>
@@ -1397,88 +1477,117 @@ export default function DashboardPage() {
 
         {section === "accounts" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h3 className="font-semibold text-[#1D3557]">Администраторы МСУ</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Учётные записи администраторов в пределах твоего региона.
-            </p>
+            <div>
+              <h3 className="font-semibold text-[#1D3557]">
+                Администраторы МСУ
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Учётные записи администраторов в пределах твоего региона.
+              </p>
+            </div>
 
             {accountsQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">
                 Загружаем учётные записи...
               </p>
+            ) : accountsQuery.isError ? (
+              <div className="py-8">
+                <p role="alert" className="text-sm text-red-700">
+                  Не удалось загрузить список администраторов МСУ.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void accountsQuery.refetch()}
+                  className={`${buttonSecondary} mt-3`}
+                >
+                  Повторить
+                </button>
+              </div>
             ) : allAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
                 Администраторы МСУ пока не зарегистрированы.
               </p>
             ) : (
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full table-fixed text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-3 py-3 font-medium">ФИО</th>
-                      <th className="px-3 py-3 font-medium">Email</th>
-                      <th className="px-3 py-3 font-medium">Статус</th>
-                      <th className="px-3 py-3 font-medium">Блокировка</th>
-                      <th className="px-3 py-3 font-medium">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {allAdmins.map((admin) => (
-                      <tr key={admin.id} className="hover:bg-slate-50">
-                        <td className="px-3 py-4 font-medium text-slate-900">
-                          {fullName(admin)}
-                        </td>
-                        <td className="px-3 py-4 text-slate-600">
-                          {admin.email}
-                        </td>
-                        <td className="px-3 py-4">
-                          <StatusBadge status={admin.accountStatus} />
-                        </td>
-                        <td className="px-3 py-4">
-                          {admin.isBlock ? (
-                            <span className="font-medium text-red-700">
-                              Заблокирован
-                            </span>
-                          ) : (
-                            <span className="text-slate-600">Нет</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-4">
-                          {admin.accountStatus === "ACCEPTED" && (
-                            <button
-                              type="button"
-                              disabled={blockMutation.isPending}
-                              onClick={() => {
-                                const action = admin.isBlock
-                                  ? "unblock"
-                                  : "block";
-                                const message = admin.isBlock
-                                  ? `Разблокировать учётную запись ${fullName(admin)}?`
-                                  : `Заблокировать учётную запись ${fullName(admin)}?`;
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {allAdmins.map((admin) => (
+                  <article
+                    key={admin.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Users size={22} />
+                        </div>
 
-                                if (window.confirm(message)) {
-                                  blockMutation.mutate({
-                                    id: admin.id,
-                                    action,
-                                  });
-                                }
-                              }}
-                              className={
-                                admin.isBlock
-                                  ? "rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                                  : "rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              }
-                            >
-                              {admin.isBlock
-                                ? "Разблокировать"
-                                : "Заблокировать"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        <StatusBadge status={admin.accountStatus} />
+                      </div>
+
+                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
+                        {fullName(admin)}
+                      </h4>
+
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {admin.email}
+                      </p>
+
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          Состояние учётной записи
+                        </p>
+
+                        <div className="mt-2 flex items-center gap-2">
+                          <span
+                            className={`size-2 rounded-full ${
+                              admin.isBlock ? "bg-red-500" : "bg-emerald-500"
+                            }`}
+                          />
+
+                          <span
+                            className={`text-sm font-medium ${
+                              admin.isBlock
+                                ? "text-red-700"
+                                : "text-emerald-700"
+                            }`}
+                          >
+                            {admin.isBlock ? "Заблокирован" : "Не заблокирован"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {admin.accountStatus === "ACCEPTED" && (
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <button
+                          type="button"
+                          disabled={blockMutation.isPending}
+                          onClick={() => {
+                            const action = admin.isBlock ? "unblock" : "block";
+
+                            const message = admin.isBlock
+                              ? `Разблокировать учётную запись ${fullName(admin)}?`
+                              : `Заблокировать учётную запись ${fullName(admin)}?`;
+
+                            if (window.confirm(message)) {
+                              blockMutation.mutate({
+                                id: admin.id,
+                                action,
+                              });
+                            }
+                          }}
+                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            admin.isBlock
+                              ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              : "border-red-200 text-red-700 hover:bg-red-50"
+                          }`}
+                        >
+                          {admin.isBlock ? "Разблокировать" : "Заблокировать"}
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
               </div>
             )}
           </section>

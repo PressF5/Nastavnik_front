@@ -428,7 +428,7 @@ export function MsuAdminDashboard() {
             ) : (
               <>
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[540px] text-left text-sm">
+                  <table className="w-full min-w-135 text-left text-sm">
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3 font-semibold">Код</th>
@@ -504,69 +504,77 @@ export function MsuAdminDashboard() {
                 Нет заявок, ожидающих подтверждения.
               </p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[680px] text-left text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-3 py-3 font-semibold">ФИО</th>
-                      <th className="px-3 py-3 font-semibold">Email</th>
-                      <th className="px-3 py-3 font-semibold">Статус</th>
-                      <th className="px-3 py-3 font-semibold">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {pendingAdmins.map((admin) => (
-                      <tr key={admin.id}>
-                        <td className="px-3 py-4 font-medium text-slate-900">
-                          {fullName(admin)}
-                        </td>
-                        <td className="px-3 py-4 text-slate-600">
-                          {admin.email}
-                        </td>
-                        <td className="px-3 py-4">
-                          <StatusBadge status={admin.accountStatus} />
-                        </td>
-                        <td className="px-3 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                              disabled={decisionMutation.isPending}
-                              onClick={() =>
-                                decisionMutation.mutate({
-                                  id: admin.id,
-                                  action: "approve",
-                                })
-                              }
-                            >
-                              <Check size={14} />
-                              Подтвердить
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              disabled={decisionMutation.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Отклонить заявку ${fullName(admin)}?`,
-                                  )
-                                )
-                                  decisionMutation.mutate({
-                                    id: admin.id,
-                                    action: "reject",
-                                  });
-                              }}
-                            >
-                              <X size={14} />
-                              Отклонить
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {pendingAdmins.map((admin) => (
+                  <article
+                    key={admin.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Users size={22} />
+                        </div>
+
+                        <StatusBadge status={admin.accountStatus} />
+                      </div>
+
+                      <h3 className="mt-4 font-semibold leading-6 text-[#1D3557]">
+                        {fullName(admin)}
+                      </h3>
+
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {admin.email}
+                      </p>
+
+                      <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Тип учётной записи
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        Администратор образовательной организации
+                      </p>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={decisionMutation.isPending}
+                        onClick={() =>
+                          decisionMutation.mutate({
+                            id: admin.id,
+                            action: "approve",
+                          })
+                        }
+                      >
+                        <Check size={15} />
+                        Подтвердить
+                      </button>
+
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={decisionMutation.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Отклонить заявку ${fullName(admin)}?`,
+                            )
+                          ) {
+                            decisionMutation.mutate({
+                              id: admin.id,
+                              action: "reject",
+                            });
+                          }
+                        }}
+                      >
+                        <X size={15} />
+                        Отклонить
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </section>
@@ -588,7 +596,7 @@ export function MsuAdminDashboard() {
               </p>
             ) : (
               <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-180 text-left text-sm">
                   <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-3 py-3 font-semibold">ФИО</th>
