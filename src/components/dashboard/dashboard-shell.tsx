@@ -46,11 +46,14 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
     }
   }
 
-  const pageTitle = pathname.includes("/profile")
-    ? "Мой профиль"
-    : pathname.includes("/msus/")
-      ? "Муниципальное управление"
-      : "Панель управления";
+  const pageTitle =
+    pathname === "/dashboard/profile-fields"
+      ? "Конструктор анкет"
+      : pathname.includes("/profile")
+        ? "Мой профиль"
+        : pathname.includes("/msus/")
+          ? "Муниципальное управление"
+          : "Панель управления";
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] text-slate-900">

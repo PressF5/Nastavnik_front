@@ -9,6 +9,7 @@ import {
   PanelLeftOpen,
   UserRound,
   X,
+  SlidersHorizontal,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -51,6 +52,11 @@ const msuNavigation: {
   { id: "oo-accounts", label: "Администраторы ОО", icon: UserRound },
 ];
 
+const profileFieldsNavigation = {
+  label: "Конструктор анкет",
+  icon: SlidersHorizontal,
+};
+
 export function DashboardSidebar({
   onLogout,
   isLoggingOut,
@@ -85,6 +91,11 @@ export function DashboardSidebar({
     if (pathname !== "/dashboard/profile") {
       router.push("/dashboard/profile");
     }
+  }
+
+  function openProfileFields() {
+    setMobileOpen(false);
+    router.push("/dashboard/profile-fields");
   }
 
   return (
@@ -175,6 +186,26 @@ export function DashboardSidebar({
               </button>
             );
           })}
+          {user?.role === "REGION_ADMIN" && (
+            <button
+              type="button"
+              onClick={openProfileFields}
+              title={collapsed ? profileFieldsNavigation.label : undefined}
+              className={[
+                "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition",
+                collapsed ? "lg:justify-center lg:px-2" : "",
+                pathname === "/dashboard/profile-fields"
+                  ? "bg-[#E8F0F5] font-semibold text-[#1D3557]"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+              ].join(" ")}
+            >
+              <SlidersHorizontal size={19} className="shrink-0" />
+
+              <span className={collapsed ? "lg:hidden" : ""}>
+                {profileFieldsNavigation.label}
+              </span>
+            </button>
+          )}
         </nav>
 
         <div className="border-t border-slate-200 p-3">
