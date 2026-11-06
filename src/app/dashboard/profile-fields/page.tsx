@@ -80,7 +80,7 @@ type UpdateProfileFieldRequest = {
   searchable: boolean;
   roles: ProfileFieldRole[];
   matchingEnabled: boolean;
-  options: ProfileFieldRole[];
+  options: CreateProfileFieldRequest["options"];
 };
 
 const inputClass =
