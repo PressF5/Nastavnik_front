@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UserRound, Save, LoaderCircle } from "lucide-react";
@@ -162,8 +162,10 @@ export default function ProfilePage() {
     : "";
 
   // Инициализируем форму значениями, полученными с сервера.
+  const isFormInitialized = useRef(false);
+
   useEffect(() => {
-    if (!profileQuery.data) {
+    if (!profileQuery.data || isFormInitialized.current) {
       return;
     }
 
@@ -174,6 +176,7 @@ export default function ProfilePage() {
     }
 
     setValues(initialValues);
+    isFormInitialized.current = true;
   }, [profileQuery.data]);
 
   function updateValue(fieldId: number, value: FieldValue) {
