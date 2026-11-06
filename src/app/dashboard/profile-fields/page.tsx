@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   LoaderCircle,
   Trash2,
+  Power,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -212,6 +214,37 @@ export default function ProfileFieldsPage() {
     },
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({
+      fieldId,
+      action,
+    }: {
+      fieldId: number;
+      action: "activate" | "deactivate";
+    }) =>
+      apiFetch<void>(`/api/profile-fields/${fieldId}/${action}`, {
+        method: "PATCH",
+      }),
+
+    onSuccess: async (_, variables) => {
+      toast.success(
+        variables.action === "deactivate"
+          ? "Поле деактивировано."
+          : "Поле активировано.",
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: ["profile-fields"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось изменить статус поля.", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   function resetForm() {
     setEditingFieldId(null);
     setEditingVersion(null);
@@ -272,6 +305,25 @@ export default function ProfileFieldsPage() {
     window.scrollTo({
       top: 0,
       behavior: "smooth",
+    });
+  }
+
+  function handleToggleActive(field: ProfileField) {
+    const action = field.active ? "deactivate" : "activate";
+
+    const confirmed = window.confirm(
+      field.active
+        ? `Деактивировать поле «${field.name}»?\n\nОно перестанет отображаться в анкетах и участвовать в подборе. Существующие настройки и ответы сохранятся.`
+        : `Активировать поле «${field.name}»?\n\nОно снова появится в анкетах с прежними настройками.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    toggleActiveMutation.mutate({
+      fieldId: field.id,
+      action,
     });
   }
 
@@ -771,17 +823,41 @@ export default function ProfileFieldsPage() {
                     </span>
                   )}
                 </div>
-                {field.active && (
-                  <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {field.active && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(field)}
+                        className={buttonSecondary}
+                      >
+                        Редактировать
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(field)}
+                        disabled={toggleActiveMutation.isPending}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Power size={16} />
+                        Деактивировать
+                      </button>
+                    </>
+                  )}
+
+                  {!field.active && (
                     <button
                       type="button"
-                      onClick={() => handleEdit(field)}
-                      className={buttonSecondary}
+                      onClick={() => handleToggleActive(field)}
+                      disabled={toggleActiveMutation.isPending}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Редактировать
+                      <RotateCcw size={16} />
+                      Активировать
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
