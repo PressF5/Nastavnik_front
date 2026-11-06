@@ -71,6 +71,15 @@ type CreateProfileFieldRequest = {
   }[];
 };
 
+type UpdateProfileFieldRequest = {
+  expectedVersion: number;
+  name: string;
+  fieldType: ProfileFieldType;
+  searchable: boolean;
+  roles: ProfileFieldRole[];
+  matchingEnabled: boolean;
+};
+
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20";
 
@@ -110,6 +119,8 @@ export default function ProfileFieldsPage() {
   const isInitialized = useAuthStore((state) => state.isInitialized);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
+  const [editingVersion, setEditingVersion] = useState<number | null>(null);
 
   const [name, setName] = useState("");
   const [fieldType, setFieldType] = useState<ProfileFieldType>("TEXT");
@@ -171,7 +182,40 @@ export default function ProfileFieldsPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({
+      fieldId,
+      request,
+    }: {
+      fieldId: number;
+      request: UpdateProfileFieldRequest;
+    }) =>
+      apiFetch<ProfileField>(`/api/profile-fields/${fieldId}`, {
+        method: "PUT",
+        body: JSON.stringify(request),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Поле анкеты обновлено.");
+
+      resetForm();
+
+      await queryClient.invalidateQueries({
+        queryKey: ["profile-fields"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось обновить поле", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   function resetForm() {
+    setEditingFieldId(null);
+    setEditingVersion(null);
+
     setName("");
     setFieldType("TEXT");
     setSearchable(false);
@@ -188,6 +232,47 @@ export default function ProfileFieldsPage() {
 
     setOptions([{ value: "", label: "" }]);
     setShowCreateForm(false);
+  }
+
+  function handleEdit(field: ProfileField) {
+    setEditingFieldId(field.id);
+    setEditingVersion(field.version);
+
+    setName(field.name);
+    setFieldType(field.fieldType);
+    setSearchable(field.searchable);
+    setMatchingEnabled(field.matchingEnabled);
+
+    const mentorRole = field.roles.find((role) => role.roleCode === "MENTOR");
+
+    const menteeRole = field.roles.find((role) => role.roleCode === "MENTEE");
+
+    setMentorEnabled(Boolean(mentorRole));
+    setMenteeEnabled(Boolean(menteeRole));
+
+    setMentorRequired(mentorRole?.required ?? false);
+    setMenteeRequired(menteeRole?.required ?? false);
+
+    setMentorSortOrder(String(mentorRole?.sortOrder ?? 0));
+    setMenteeSortOrder(String(menteeRole?.sortOrder ?? 0));
+
+    setOptions(
+      field.options.length > 0
+        ? field.options
+            .filter((option) => option.active)
+            .map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))
+        : [{ value: "", label: "" }],
+    );
+
+    setShowCreateForm(true);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   function updateOption(index: number, key: keyof CreateOption, value: string) {
@@ -285,6 +370,29 @@ export default function ProfileFieldsPage() {
       }
     }
 
+    if (editingFieldId !== null) {
+      if (editingVersion === null) {
+        toast.error("Не удалось определить версию редактируемого поля.");
+        return;
+      }
+
+      const request: UpdateProfileFieldRequest = {
+        expectedVersion: editingVersion,
+        name: normalizedName,
+        fieldType,
+        searchable,
+        roles,
+        matchingEnabled,
+      };
+
+      updateMutation.mutate({
+        fieldId: editingFieldId,
+        request,
+      });
+
+      return;
+    }
+
     const request: CreateProfileFieldRequest = {
       name: normalizedName,
       fieldType,
@@ -375,6 +483,9 @@ export default function ProfileFieldsPage() {
               onSubmit={handleCreate}
               className="mt-6 space-y-6 border-t border-slate-100 pt-6"
             >
+              <h3 className="text-base font-semibold text-[#1D3557]">
+                {editingFieldId !== null ? "Редактирование поля" : "Новое поле"}
+              </h3>
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-slate-700">
@@ -403,6 +514,7 @@ export default function ProfileFieldsPage() {
                       setOptions([{ value: "", label: "" }]);
                     }}
                     className={inputClass}
+                    disabled={editingFieldId !== null}
                   >
                     {Object.entries(fieldTypeLabels).map(([value, label]) => (
                       <option key={value} value={value}>
@@ -410,6 +522,13 @@ export default function ProfileFieldsPage() {
                       </option>
                     ))}
                   </select>
+
+                  {editingFieldId !== null && (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      Изменение типа поля будет доступно отдельно при настройке
+                      вариантов ответа.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -557,13 +676,18 @@ export default function ProfileFieldsPage() {
 
                 <button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
                   className={buttonPrimary}
                 >
-                  {createMutation.isPending && (
+                  {(createMutation.isPending || updateMutation.isPending) && (
                     <LoaderCircle size={16} className="animate-spin" />
                   )}
-                  Создать поле
+
+                  {editingFieldId !== null
+                    ? "Сохранить изменения"
+                    : "Создать поле"}
                 </button>
               </div>
             </form>
@@ -647,6 +771,17 @@ export default function ProfileFieldsPage() {
                     </span>
                   )}
                 </div>
+                {field.active && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(field)}
+                      className={buttonSecondary}
+                    >
+                      Редактировать
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
