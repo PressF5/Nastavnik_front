@@ -512,22 +512,22 @@ export default function ProfileFieldsPage() {
                         className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
                       >
                         <input
-                          value={option.value}
-                          onChange={(event) =>
-                            updateOption(index, "value", event.target.value)
-                          }
-                          maxLength={255}
-                          placeholder="Значение, например: higher"
-                          className={inputClass}
-                        />
-
-                        <input
                           value={option.label}
                           onChange={(event) =>
                             updateOption(index, "label", event.target.value)
                           }
                           maxLength={255}
                           placeholder="Название, например: Высшее"
+                          className={inputClass}
+                        />
+
+                        <input
+                          value={option.value}
+                          onChange={(event) =>
+                            updateOption(index, "value", event.target.value)
+                          }
+                          maxLength={255}
+                          placeholder="Значение, например: higher"
                           className={inputClass}
                         />
 

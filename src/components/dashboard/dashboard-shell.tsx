@@ -22,8 +22,13 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
   const { collapsed, setCollapsed, setMobileOpen } = useDashboardShell();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -46,8 +51,9 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
     }
   }
 
-  const pageTitle =
-    pathname === "/dashboard/profile-fields"
+  const pageTitle = !isMounted
+    ? "Панель управления"
+    : pathname === "/dashboard/profile-fields"
       ? "Конструктор анкет"
       : pathname.includes("/profile")
         ? "Мой профиль"
