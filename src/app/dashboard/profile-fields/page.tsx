@@ -80,6 +80,7 @@ type UpdateProfileFieldRequest = {
   searchable: boolean;
   roles: ProfileFieldRole[];
   matchingEnabled: boolean;
+  options: ProfileFieldRole[];
 };
 
 const inputClass =
@@ -435,6 +436,12 @@ export default function ProfileFieldsPage() {
         searchable,
         roles,
         matchingEnabled,
+        options: isChoiceField
+          ? normalizedOptions.map((option, index) => ({
+              ...option,
+              sortOrder: index,
+            }))
+          : [],
       };
 
       updateMutation.mutate({
