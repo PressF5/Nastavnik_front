@@ -460,6 +460,219 @@ export default function ProfileFieldsPage() {
     createMutation.mutate(request);
   }
 
+  function renderFieldForm() {
+    return (
+      showCreateForm && (
+        <form
+          onSubmit={handleCreate}
+          className="mt-6 space-y-6 border-t border-slate-100 pt-6"
+        >
+          <h3 className="text-base font-semibold text-[#1D3557]">
+            {editingFieldId !== null ? "Редактирование поля" : "Новое поле"}
+          </h3>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Название поля
+              </label>
+
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={255}
+                required
+                placeholder="Например: Педагогический стаж"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Тип поля
+              </label>
+
+              <select
+                value={fieldType}
+                onChange={(event) => {
+                  setFieldType(event.target.value as ProfileFieldType);
+                  setOptions([{ value: "", label: "" }]);
+                }}
+                className={inputClass}
+                disabled={editingFieldId !== null}
+              >
+                {Object.entries(fieldTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+
+              {editingFieldId !== null && (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Изменение типа поля будет доступно отдельно при настройке
+                  вариантов ответа.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-4">
+            <h3 className="text-sm font-semibold text-[#1D3557]">
+              Назначение поля
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Выбери, в чьей анкете должно отображаться поле.
+            </p>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <RoleSettings
+                title="Наставник"
+                enabled={mentorEnabled}
+                onEnabledChange={setMentorEnabled}
+                required={mentorRequired}
+                onRequiredChange={setMentorRequired}
+                sortOrder={mentorSortOrder}
+                onSortOrderChange={setMentorSortOrder}
+              />
+
+              <RoleSettings
+                title="Наставляемый"
+                enabled={menteeEnabled}
+                onEnabledChange={setMenteeEnabled}
+                required={menteeRequired}
+                onRequiredChange={setMenteeRequired}
+                sortOrder={menteeSortOrder}
+                onSortOrderChange={setMenteeSortOrder}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={searchable}
+                onChange={(event) => setSearchable(event.target.checked)}
+                className="size-4 rounded border-slate-300"
+              />
+              Использовать поле для поиска
+            </label>
+
+            <label
+              className={`flex items-center gap-3 text-sm ${
+                canUseMatching ? "text-slate-700" : "text-slate-400"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={matchingEnabled}
+                disabled={!canUseMatching}
+                onChange={(event) => setMatchingEnabled(event.target.checked)}
+                className="size-4 rounded border-slate-300"
+              />
+              Использовать поле при подборе наставника
+            </label>
+
+            {!canUseMatching && (
+              <p className="text-xs text-slate-500">
+                Для подбора необходимо назначить поле и наставнику, и
+                наставляемому.
+              </p>
+            )}
+          </div>
+
+          {isChoiceField && (
+            <div className="rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#1D3557]">
+                    Варианты ответа
+                  </h3>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Значение используется системой, название отображается
+                    пользователю.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addOption}
+                  className={buttonSecondary}
+                >
+                  <Plus size={15} />
+                  Добавить
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {options.map((option, index) => (
+                  <div
+                    key={index}
+                    className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+                  >
+                    <input
+                      value={option.label}
+                      onChange={(event) =>
+                        updateOption(index, "label", event.target.value)
+                      }
+                      maxLength={255}
+                      placeholder="Название, например: Высшее"
+                      className={inputClass}
+                    />
+
+                    <input
+                      value={option.value}
+                      onChange={(event) =>
+                        updateOption(index, "value", event.target.value)
+                      }
+                      maxLength={255}
+                      placeholder="Значение, например: higher"
+                      className={inputClass}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      disabled={options.length === 1}
+                      aria-label="Удалить вариант"
+                      className="mt-1.5 inline-flex items-center justify-center rounded-lg border border-red-200 px-3 text-red-600 hover:bg-red-50 disabled:opacity-30"
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
+            <button
+              type="button"
+              onClick={resetForm}
+              className={buttonSecondary}
+            >
+              Отмена
+            </button>
+
+            <button
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className={buttonPrimary}
+            >
+              {(createMutation.isPending || updateMutation.isPending) && (
+                <LoaderCircle size={16} className="animate-spin" />
+              )}
+
+              {editingFieldId !== null ? "Сохранить изменения" : "Создать поле"}
+            </button>
+          </div>
+        </form>
+      )
+    );
+  }
+
   if (!isInitialized || !user) {
     return (
       <main className="flex min-h-64 items-center justify-center p-6">
@@ -529,221 +742,7 @@ export default function ProfileFieldsPage() {
               {showCreateForm ? "Скрыть форму" : "Создать поле"}
             </button>
           </div>
-
-          {showCreateForm && (
-            <form
-              onSubmit={handleCreate}
-              className="mt-6 space-y-6 border-t border-slate-100 pt-6"
-            >
-              <h3 className="text-base font-semibold text-[#1D3557]">
-                {editingFieldId !== null ? "Редактирование поля" : "Новое поле"}
-              </h3>
-              <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">
-                    Название поля
-                  </label>
-
-                  <input
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    maxLength={255}
-                    required
-                    placeholder="Например: Педагогический стаж"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700">
-                    Тип поля
-                  </label>
-
-                  <select
-                    value={fieldType}
-                    onChange={(event) => {
-                      setFieldType(event.target.value as ProfileFieldType);
-                      setOptions([{ value: "", label: "" }]);
-                    }}
-                    className={inputClass}
-                    disabled={editingFieldId !== null}
-                  >
-                    {Object.entries(fieldTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {editingFieldId !== null && (
-                    <p className="mt-1.5 text-xs text-slate-500">
-                      Изменение типа поля будет доступно отдельно при настройке
-                      вариантов ответа.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-[#1D3557]">
-                  Назначение поля
-                </h3>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Выбери, в чьей анкете должно отображаться поле.
-                </p>
-
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <RoleSettings
-                    title="Наставник"
-                    enabled={mentorEnabled}
-                    onEnabledChange={setMentorEnabled}
-                    required={mentorRequired}
-                    onRequiredChange={setMentorRequired}
-                    sortOrder={mentorSortOrder}
-                    onSortOrderChange={setMentorSortOrder}
-                  />
-
-                  <RoleSettings
-                    title="Наставляемый"
-                    enabled={menteeEnabled}
-                    onEnabledChange={setMenteeEnabled}
-                    required={menteeRequired}
-                    onRequiredChange={setMenteeRequired}
-                    sortOrder={menteeSortOrder}
-                    onSortOrderChange={setMenteeSortOrder}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={searchable}
-                    onChange={(event) => setSearchable(event.target.checked)}
-                    className="size-4 rounded border-slate-300"
-                  />
-                  Использовать поле для поиска
-                </label>
-
-                <label
-                  className={`flex items-center gap-3 text-sm ${
-                    canUseMatching ? "text-slate-700" : "text-slate-400"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={matchingEnabled}
-                    disabled={!canUseMatching}
-                    onChange={(event) =>
-                      setMatchingEnabled(event.target.checked)
-                    }
-                    className="size-4 rounded border-slate-300"
-                  />
-                  Использовать поле при подборе наставника
-                </label>
-
-                {!canUseMatching && (
-                  <p className="text-xs text-slate-500">
-                    Для подбора необходимо назначить поле и наставнику, и
-                    наставляемому.
-                  </p>
-                )}
-              </div>
-
-              {isChoiceField && (
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[#1D3557]">
-                        Варианты ответа
-                      </h3>
-
-                      <p className="mt-1 text-xs text-slate-500">
-                        Значение используется системой, название отображается
-                        пользователю.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={addOption}
-                      className={buttonSecondary}
-                    >
-                      <Plus size={15} />
-                      Добавить
-                    </button>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {options.map((option, index) => (
-                      <div
-                        key={index}
-                        className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
-                      >
-                        <input
-                          value={option.label}
-                          onChange={(event) =>
-                            updateOption(index, "label", event.target.value)
-                          }
-                          maxLength={255}
-                          placeholder="Название, например: Высшее"
-                          className={inputClass}
-                        />
-
-                        <input
-                          value={option.value}
-                          onChange={(event) =>
-                            updateOption(index, "value", event.target.value)
-                          }
-                          maxLength={255}
-                          placeholder="Значение, например: higher"
-                          className={inputClass}
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          disabled={options.length === 1}
-                          aria-label="Удалить вариант"
-                          className="mt-1.5 inline-flex items-center justify-center rounded-lg border border-red-200 px-3 text-red-600 hover:bg-red-50 disabled:opacity-30"
-                        >
-                          <Trash2 size={17} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className={buttonSecondary}
-                >
-                  Отмена
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
-                  className={buttonPrimary}
-                >
-                  {(createMutation.isPending || updateMutation.isPending) && (
-                    <LoaderCircle size={16} className="animate-spin" />
-                  )}
-
-                  {editingFieldId !== null
-                    ? "Сохранить изменения"
-                    : "Создать поле"}
-                </button>
-              </div>
-            </form>
-          )}
+          {showCreateForm && editingFieldId === null && renderFieldForm()}
         </section>
 
         <section className="space-y-4">
@@ -845,6 +844,7 @@ export default function ProfileFieldsPage() {
                       Активировать
                     </button>
                   )}
+                  {editingFieldId === field.id && renderFieldForm()}
                 </div>
               </div>
 
