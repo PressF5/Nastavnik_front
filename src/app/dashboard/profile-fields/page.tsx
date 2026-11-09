@@ -300,13 +300,6 @@ export default function ProfileFieldsPage() {
             }))
         : [{ value: "", label: "" }],
     );
-
-    setShowCreateForm(true);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
   }
 
   function handleToggleActive(field: ProfileField) {
