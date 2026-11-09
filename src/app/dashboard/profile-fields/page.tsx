@@ -1002,6 +1002,26 @@ export default function ProfileFieldsPage() {
                 </div>
               )}
 
+              <ProfileMatchingRuleEditor
+                field={field}
+                rule={matchingRules.find(
+                  (rule) => rule.profileFieldId === field.id,
+                )}
+                onCreate={(request) =>
+                  createMatchingRuleMutation.mutate(request)
+                }
+                onUpdate={(ruleId, request) =>
+                  updateMatchingRuleMutation.mutate({
+                    ruleId,
+                    request,
+                  })
+                }
+                isPending={
+                  createMatchingRuleMutation.isPending ||
+                  updateMatchingRuleMutation.isPending
+                }
+              />
+
               {/* Назначение ролям */}
               <div className="space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
@@ -1123,6 +1143,236 @@ function RoleSettings({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProfileMatchingRuleEditor({
+  field,
+  rule,
+  onCreate,
+  onUpdate,
+  isPending,
+}: {
+  field: ProfileField;
+  rule?: ProfileMatchingRule;
+  onCreate: (request: CreateProfileMatchingRuleRequest) => void;
+  onUpdate: (ruleId: number, request: UpdateProfileMatchingRuleRequest) => void;
+  isPending: boolean;
+}) {
+  const availableTypes = comparisonOptionsByFieldType[field.fieldType];
+
+  const hasBothRoles =
+    field.roles.some((role) => role.roleCode === "MENTOR") &&
+    field.roles.some((role) => role.roleCode === "MENTEE");
+
+  const canUseMatching = field.active && field.matchingEnabled && hasBothRoles;
+
+  const [comparisonType, setComparisonType] = useState<ComparisonType>(
+    rule?.comparisonType ?? availableTypes[0] ?? "EXACT_MATCH",
+  );
+
+  const [weight, setWeight] = useState(String(rule?.weight ?? 5));
+
+  useEffect(() => {
+    setComparisonType(
+      rule?.comparisonType ?? availableTypes[0] ?? "EXACT_MATCH",
+    );
+    setWeight(String(rule?.weight ?? 5));
+  }, [rule, field.fieldType]);
+
+  if (!field.matchingEnabled && !rule) {
+    return null;
+  }
+
+  if (availableTypes.length === 0 && !rule) {
+    return null;
+  }
+
+  function handleSave(active: boolean) {
+    const normalizedWeight = Number(weight);
+
+    if (
+      !Number.isInteger(normalizedWeight) ||
+      normalizedWeight < 1 ||
+      normalizedWeight > 10
+    ) {
+      toast.error("Вес правила должен быть целым числом от 1 до 10.");
+      return;
+    }
+
+    if (!availableTypes.includes(comparisonType)) {
+      toast.error("Выбранный тип сравнения несовместим с типом поля.");
+      return;
+    }
+
+    if (rule) {
+      onUpdate(rule.id, {
+        comparisonType,
+        weight: normalizedWeight,
+        active,
+      });
+      return;
+    }
+
+    if (!canUseMatching) {
+      toast.error(
+        "Поле должно быть активным, включённым в подбор и назначенным обеим ролям.",
+      );
+      return;
+    }
+
+    onCreate({
+      profileFieldId: field.id,
+      comparisonType,
+      weight: normalizedWeight,
+    });
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-semibold text-[#1D3557]">
+            Правило подбора
+          </h4>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Настройка сравнения значений этого поля у наставника и
+            наставляемого.
+          </p>
+        </div>
+
+        {rule && (
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              rule.active
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {rule.active ? "Активно" : "Неактивно"}
+          </span>
+        )}
+      </div>
+
+      {!canUseMatching && !rule && (
+        <p className="text-sm text-slate-500">
+          Для настройки правила необходимо активное поле, включённое в подбор и
+          назначенное обеим ролям.
+        </p>
+      )}
+
+      {rule && !canUseMatching && rule.active && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Поле больше не соответствует условиям участия в подборе. Деактивируй
+          правило или восстанови настройки поля.
+        </p>
+      )}
+
+      {(canUseMatching || rule) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Тип сравнения
+            </label>
+
+            <select
+              value={comparisonType}
+              onChange={(event) =>
+                setComparisonType(event.target.value as ComparisonType)
+              }
+              disabled={isPending || (Boolean(rule?.active) && !canUseMatching)}
+              className={inputClass}
+            >
+              {availableTypes.map((type) => (
+                <option key={type} value={type}>
+                  {comparisonTypeLabels[type]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Вес правила (1–10)
+            </label>
+
+            <input
+              type="number"
+              min={1}
+              max={10}
+              step={1}
+              value={weight}
+              onChange={(event) => setWeight(event.target.value)}
+              disabled={isPending || (Boolean(rule?.active) && !canUseMatching)}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap justify-end gap-2">
+        {!rule && (
+          <button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={!canUseMatching || isPending}
+            className={buttonPrimary}
+          >
+            {isPending && <LoaderCircle size={16} className="animate-spin" />}
+            Создать правило
+          </button>
+        )}
+
+        {rule && (
+          <>
+            {rule.active ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={isPending}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                >
+                  Деактивировать
+                </button>
+
+                {canUseMatching && (
+                  <button
+                    type="button"
+                    onClick={() => handleSave(true)}
+                    disabled={isPending}
+                    className={buttonPrimary}
+                  >
+                    Сохранить изменения
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={isPending}
+                  className={buttonSecondary}
+                >
+                  Сохранить настройки
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  disabled={!canUseMatching || isPending}
+                  className={buttonPrimary}
+                >
+                  Активировать
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
