@@ -1181,10 +1181,6 @@ function ProfileMatchingRuleEditor({
     setWeight(String(rule?.weight ?? 5));
   }, [rule, field.fieldType]);
 
-  if (!field.matchingEnabled && !rule) {
-    return null;
-  }
-
   if (availableTypes.length === 0 && !rule) {
     return null;
   }
