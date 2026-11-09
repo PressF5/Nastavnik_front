@@ -8,7 +8,6 @@ import {
   Plus,
   SlidersHorizontal,
   LoaderCircle,
-  Trash2,
   Power,
   RotateCcw,
 } from "lucide-react";
@@ -53,6 +52,34 @@ type ProfileField = {
   matchingEnabled: boolean;
   roles: ProfileFieldRole[];
   options: ProfileFieldOption[];
+};
+
+type ComparisonType =
+  | "EXACT_MATCH"
+  | "MULTISELECT_OVERLAP"
+  | "TEXT_WORD_OVERLAP"
+  | "NUMERIC_PROXIMITY"
+  | "BOOLEAN_MATCH";
+
+type ProfileMatchingRule = {
+  id: number;
+  profileFieldId: number;
+  profileFieldName: string;
+  comparisonType: ComparisonType;
+  weight: number;
+  active: boolean;
+};
+
+type CreateProfileMatchingRuleRequest = {
+  profileFieldId: number;
+  comparisonType: ComparisonType;
+  weight: number;
+};
+
+type UpdateProfileMatchingRuleRequest = {
+  comparisonType: ComparisonType;
+  weight: number;
+  active: boolean;
 };
 
 type CreateOption = {
@@ -102,6 +129,25 @@ const fieldTypeLabels: Record<ProfileFieldType, string> = {
   SELECT: "Один вариант",
   MULTISELECT: "Несколько вариантов",
 };
+
+const comparisonTypeLabels: Record<ComparisonType, string> = {
+  EXACT_MATCH: "Полное совпадение",
+  MULTISELECT_OVERLAP: "Пересечение выбранных вариантов",
+  TEXT_WORD_OVERLAP: "Совпадение слов",
+  NUMERIC_PROXIMITY: "Близость числовых значений",
+  BOOLEAN_MATCH: "Совпадение Да / Нет",
+};
+
+const comparisonOptionsByFieldType: Record<ProfileFieldType, ComparisonType[]> =
+  {
+    TEXT: ["EXACT_MATCH", "TEXT_WORD_OVERLAP"],
+    TEXTAREA: ["TEXT_WORD_OVERLAP"],
+    NUMBER: ["NUMERIC_PROXIMITY"],
+    DATE: [],
+    BOOLEAN: ["BOOLEAN_MATCH"],
+    SELECT: ["EXACT_MATCH"],
+    MULTISELECT: ["MULTISELECT_OVERLAP"],
+  };
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -159,6 +205,15 @@ export default function ProfileFieldsPage() {
     queryFn: () => apiFetch<ProfileField[]>("/api/profile-fields"),
     enabled: isInitialized && user?.role === "REGION_ADMIN",
   });
+
+  const matchingRulesQuery = useQuery({
+    queryKey: ["profile-matching-rules"],
+    queryFn: () =>
+      apiFetch<ProfileMatchingRule[]>("/api/admin/profile-matching-rules"),
+    enabled: isInitialized && user?.role === "REGION_ADMIN",
+  });
+
+  const matchingRules = matchingRulesQuery.data ?? [];
 
   const fields = fieldsQuery.data ?? [];
 
@@ -242,6 +297,63 @@ export default function ProfileFieldsPage() {
 
     onError: (error) => {
       toast.error("Не удалось изменить статус поля.", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const createMatchingRuleMutation = useMutation({
+    mutationFn: (request: CreateProfileMatchingRuleRequest) =>
+      apiFetch<ProfileMatchingRule>("/api/admin/profile-matching-rules", {
+        method: "POST",
+        body: JSON.stringify(request),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Правило подбора создано.");
+
+      await queryClient.invalidateQueries({
+        queryKey: ["profile-matching-rules"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось создать правило подбора.", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const updateMatchingRuleMutation = useMutation({
+    mutationFn: ({
+      ruleId,
+      request,
+    }: {
+      ruleId: number;
+      request: UpdateProfileMatchingRuleRequest;
+    }) =>
+      apiFetch<ProfileMatchingRule>(
+        `/api/admin/profile-matching-rules/${ruleId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(request),
+        },
+      ),
+
+    onSuccess: async (_, variables) => {
+      toast.success(
+        variables.request.active
+          ? "Правило подбора сохранено."
+          : "Правило подбора деактивировано.",
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: ["profile-matching-rules"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось обновить правило подбора.", {
         description: getErrorMessage(error),
       });
     },
@@ -342,12 +454,6 @@ export default function ProfileFieldsPage() {
       ...previous,
       { value: "", label: "", active: true },
     ]);
-  }
-
-  function removeOption(index: number) {
-    setOptions((previous) =>
-      previous.filter((_, optionIndex) => optionIndex !== index),
-    );
   }
 
   function handleCreate(event: SubmitEvent<HTMLFormElement>) {
