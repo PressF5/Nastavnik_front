@@ -58,6 +58,7 @@ type ProfileField = {
 type CreateOption = {
   value: string;
   label: string;
+  active: boolean;
 };
 
 type CreateProfileFieldRequest = {
@@ -140,7 +141,7 @@ export default function ProfileFieldsPage() {
   const [menteeSortOrder, setMenteeSortOrder] = useState("0");
 
   const [options, setOptions] = useState<CreateOption[]>([
-    { value: "", label: "" },
+    { value: "", label: "", active: true },
   ]);
 
   const isChoiceField = fieldType === "SELECT" || fieldType === "MULTISELECT";
@@ -264,7 +265,7 @@ export default function ProfileFieldsPage() {
     setMentorSortOrder("0");
     setMenteeSortOrder("0");
 
-    setOptions([{ value: "", label: "" }]);
+    setOptions([{ value: "", label: "", active: true }]);
     setShowCreateForm(false);
   }
 
@@ -292,13 +293,12 @@ export default function ProfileFieldsPage() {
 
     setOptions(
       field.options.length > 0
-        ? field.options
-            .filter((option) => option.active)
-            .map((option) => ({
-              value: option.value,
-              label: option.label,
-            }))
-        : [{ value: "", label: "" }],
+        ? field.options.map((option) => ({
+            value: option.value,
+            label: option.label,
+            active: option.active,
+          }))
+        : [{ value: "", label: "", active: true }],
     );
   }
 
@@ -321,7 +321,7 @@ export default function ProfileFieldsPage() {
     });
   }
 
-  function updateOption(index: number, key: keyof CreateOption, value: string) {
+  function updateOption(index: number, key: "value" | "label", value: string) {
     setOptions((previous) =>
       previous.map((option, optionIndex) =>
         optionIndex === index ? { ...option, [key]: value } : option,
@@ -329,8 +329,19 @@ export default function ProfileFieldsPage() {
     );
   }
 
+  function toggleOptionActive(index: number) {
+    setOptions((previous) =>
+      previous.map((option, optionIndex) =>
+        optionIndex === index ? { ...option, active: !option.active } : option,
+      ),
+    );
+  }
+
   function addOption() {
-    setOptions((previous) => [...previous, { value: "", label: "" }]);
+    setOptions((previous) => [
+      ...previous,
+      { value: "", label: "", active: true },
+    ]);
   }
 
   function removeOption(index: number) {
@@ -389,15 +400,17 @@ export default function ProfileFieldsPage() {
     }
 
     const normalizedOptions = isChoiceField
-      ? options.map((option) => ({
-          value: option.value.trim(),
-          label: option.label.trim(),
-        }))
+      ? options
+          .filter((option) => option.active)
+          .map((option) => ({
+            value: option.value.trim(),
+            label: option.label.trim(),
+          }))
       : [];
 
     if (isChoiceField) {
       if (normalizedOptions.length === 0) {
-        toast.error("Добавь хотя бы один вариант ответа.");
+        toast.error("Должен остаться хотя бы один активный вариант ответа.");
         return;
       }
 
@@ -494,7 +507,7 @@ export default function ProfileFieldsPage() {
               value={fieldType}
               onChange={(event) => {
                 setFieldType(event.target.value as ProfileFieldType);
-                setOptions([{ value: "", label: "" }]);
+                setOptions([{ value: "", label: "", active: true }]);
               }}
               className={inputClass}
               disabled={editingFieldId !== null}
@@ -609,13 +622,18 @@ export default function ProfileFieldsPage() {
               {options.map((option, index) => (
                 <div
                   key={index}
-                  className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+                  className={`grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_auto] ${
+                    option.active
+                      ? "border-slate-200 bg-white"
+                      : "border-slate-200 bg-slate-50"
+                  }`}
                 >
                   <input
                     value={option.label}
                     onChange={(event) =>
                       updateOption(index, "label", event.target.value)
                     }
+                    disabled={!option.active}
                     maxLength={255}
                     placeholder="Название, например: Высшее"
                     className={inputClass}
@@ -626,6 +644,7 @@ export default function ProfileFieldsPage() {
                     onChange={(event) =>
                       updateOption(index, "value", event.target.value)
                     }
+                    disabled={!option.active}
                     maxLength={255}
                     placeholder="Значение, например: higher"
                     className={inputClass}
@@ -633,12 +652,29 @@ export default function ProfileFieldsPage() {
 
                   <button
                     type="button"
-                    onClick={() => removeOption(index)}
-                    disabled={options.length === 1}
-                    aria-label="Удалить вариант"
-                    className="mt-1.5 inline-flex items-center justify-center rounded-lg border border-red-200 px-3 text-red-600 hover:bg-red-50 disabled:opacity-30"
+                    onClick={() => toggleOptionActive(index)}
+                    aria-label={
+                      option.active
+                        ? "Деактивировать вариант"
+                        : "Активировать вариант"
+                    }
+                    className={`mt-1.5 inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                      option.active
+                        ? "border-red-200 text-red-600 hover:bg-red-50"
+                        : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    }`}
                   >
-                    <Trash2 size={17} />
+                    {option.active ? (
+                      <>
+                        <Power size={16} />
+                        Деактивировать
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw size={16} />
+                        Активировать
+                      </>
+                    )}
                   </button>
                 </div>
               ))}
