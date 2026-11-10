@@ -9,6 +9,9 @@ import {
   Search,
   Users,
   X,
+  Pencil,
+  Save,
+  Trash2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -125,6 +128,11 @@ export function MsuAdminDashboard() {
   const { section, setSection } = useDashboardShell();
   const [organizationSearch, setOrganizationSearch] = useState("");
   const [organizationPage, setOrganizationPage] = useState(0);
+  const [editingOrganizationId, setEditingOrganizationId] = useState<
+    number | null
+  >(null);
+  const [editingOrganizationCode, setEditingOrganizationCode] = useState("");
+  const [editingOrganizationName, setEditingOrganizationName] = useState("");
 
   const msuQuery = useQuery({
     queryKey: ["msu-admin", user?.id, "current-msu"],
@@ -233,6 +241,49 @@ export function MsuAdminDashboard() {
       }),
   });
 
+  const updateOrganizationMutation = useMutation({
+    mutationFn: ({
+      id,
+      code,
+      name,
+    }: {
+      id: number;
+      code: number;
+      name: string;
+    }) =>
+      apiFetch<EducationalOrganization>(
+        `/api/admin/educational-organizations/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ code, name }),
+        },
+      ),
+    onSuccess: async () => {
+      toast.success("Образовательная организация обновлена.");
+      setEditingOrganizationId(null);
+      await invalidateDashboard();
+    },
+    onError: (error) =>
+      toast.error("Не удалось обновить ОО", {
+        description: errorMessage(error),
+      }),
+  });
+
+  const deleteOrganizationMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/admin/educational-organizations/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: async () => {
+      toast.success("Образовательная организация удалена.");
+      await invalidateDashboard();
+    },
+    onError: (error) =>
+      toast.error("Не удалось удалить ОО", {
+        description: errorMessage(error),
+      }),
+  });
+
   const pendingAdmins = pendingAdminsQuery.data?.content ?? [];
   const organizations = organizationsQuery.data?.content ?? [];
   const accounts = accountsQuery.data?.content ?? [];
@@ -293,40 +344,42 @@ export function MsuAdminDashboard() {
           </div>
         )}
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <StatCard
-            title="Моё МСУ"
-            value={
-              msuQuery.isPending ? "—" : (msuQuery.data?.name ?? "Нет данных")
-            }
-            description={
-              msuQuery.data
-                ? `Код: ${msuQuery.data.code}`
-                : "Текущее муниципальное управление"
-            }
-            icon={<Building2 size={21} />}
-          />
-          <StatCard
-            title="Образовательные организации"
-            value={
-              organizationsQuery.isPending
-                ? "—"
-                : (organizationsQuery.data?.totalElements ?? 0)
-            }
-            description="Организации, относящиеся к вашему МСУ"
-            icon={<Building2 size={21} />}
-          />
-          <StatCard
-            title="Заявки на подтверждение"
-            value={
-              pendingAdminsQuery.isPending
-                ? "—"
-                : (pendingAdminsQuery.data?.totalElements ?? 0)
-            }
-            description="Регистрации администраторов ОО, ожидающие решения"
-            icon={<ClipboardCheck size={21} />}
-          />
-        </section>
+        {section === "overview" && (
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard
+              title="Моё МСУ"
+              value={
+                msuQuery.isPending ? "—" : (msuQuery.data?.name ?? "Нет данных")
+              }
+              description={
+                msuQuery.data
+                  ? `Код: ${msuQuery.data.code}`
+                  : "Текущее муниципальное управление"
+              }
+              icon={<Building2 size={21} />}
+            />
+            <StatCard
+              title="Образовательные организации"
+              value={
+                organizationsQuery.isPending
+                  ? "—"
+                  : (organizationsQuery.data?.totalElements ?? 0)
+              }
+              description="Организации, относящиеся к вашему МСУ"
+              icon={<Building2 size={21} />}
+            />
+            <StatCard
+              title="Заявки на подтверждение"
+              value={
+                pendingAdminsQuery.isPending
+                  ? "—"
+                  : (pendingAdminsQuery.data?.totalElements ?? 0)
+              }
+              description="Регистрации администраторов ОО, ожидающие решения"
+              icon={<ClipboardCheck size={21} />}
+            />
+          </section>
+        )}
 
         {section === "overview" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -433,23 +486,162 @@ export function MsuAdminDashboard() {
                       <tr>
                         <th className="px-3 py-3 font-semibold">Код</th>
                         <th className="px-3 py-3 font-semibold">Название</th>
-                        <th className="px-3 py-3 font-semibold">ID</th>
+                        <th className="px-3 py-3 text-right font-semibold">
+                          Действия
+                        </th>
                       </tr>
                     </thead>
+
                     <tbody className="divide-y divide-slate-100">
-                      {organizations.map((organization) => (
-                        <tr key={organization.id}>
-                          <td className="px-3 py-4 text-slate-600">
-                            {organization.code}
-                          </td>
-                          <td className="px-3 py-4 font-medium text-slate-900">
-                            {organization.name}
-                          </td>
-                          <td className="px-3 py-4 text-slate-600">
-                            {organization.id}
-                          </td>
-                        </tr>
-                      ))}
+                      {organizations.map((organization) => {
+                        const isEditing =
+                          editingOrganizationId === organization.id;
+
+                        return (
+                          <tr key={organization.id}>
+                            <td className="px-3 py-4">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editingOrganizationCode}
+                                  onChange={(event) =>
+                                    setEditingOrganizationCode(
+                                      event.target.value,
+                                    )
+                                  }
+                                  className={inputClass}
+                                />
+                              ) : (
+                                <span className="text-slate-600">
+                                  {organization.code}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-3 py-4">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  maxLength={500}
+                                  value={editingOrganizationName}
+                                  onChange={(event) =>
+                                    setEditingOrganizationName(
+                                      event.target.value,
+                                    )
+                                  }
+                                  className={inputClass}
+                                />
+                              ) : (
+                                <span className="font-medium text-slate-900">
+                                  {organization.name}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-3 py-4">
+                              <div className="flex justify-end gap-2">
+                                {isEditing ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      title="Сохранить"
+                                      disabled={
+                                        updateOrganizationMutation.isPending
+                                      }
+                                      onClick={() => {
+                                        const code = Number(
+                                          editingOrganizationCode,
+                                        );
+                                        const name =
+                                          editingOrganizationName.trim();
+
+                                        if (
+                                          !Number.isInteger(code) ||
+                                          code <= 0
+                                        ) {
+                                          toast.error(
+                                            "Код должен быть положительным целым числом.",
+                                          );
+                                          return;
+                                        }
+
+                                        if (!name) {
+                                          toast.error("Укажите название ОО.");
+                                          return;
+                                        }
+
+                                        updateOrganizationMutation.mutate({
+                                          id: organization.id,
+                                          code,
+                                          name,
+                                        });
+                                      }}
+                                      className="rounded-lg border border-emerald-200 p-2 text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+                                    >
+                                      <Save size={17} />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      title="Отменить"
+                                      onClick={() =>
+                                        setEditingOrganizationId(null)
+                                      }
+                                      className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                                    >
+                                      <X size={17} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      title="Редактировать"
+                                      onClick={() => {
+                                        setEditingOrganizationId(
+                                          organization.id,
+                                        );
+                                        setEditingOrganizationCode(
+                                          String(organization.code),
+                                        );
+                                        setEditingOrganizationName(
+                                          organization.name,
+                                        );
+                                      }}
+                                      className="rounded-lg border border-slate-200 p-2 text-[#457B9D] transition hover:bg-slate-50"
+                                    >
+                                      <Pencil size={17} />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      title="Удалить"
+                                      disabled={
+                                        deleteOrganizationMutation.isPending
+                                      }
+                                      onClick={() => {
+                                        if (
+                                          window.confirm(
+                                            `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
+                                          )
+                                        ) {
+                                          deleteOrganizationMutation.mutate(
+                                            organization.id,
+                                          );
+                                        }
+                                      }}
+                                      className="rounded-lg border border-red-200 p-2 text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                    >
+                                      <Trash2 size={17} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
