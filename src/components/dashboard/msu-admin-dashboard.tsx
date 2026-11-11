@@ -544,54 +544,66 @@ export function MsuAdminDashboard() {
 
         {section === "organizations" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              <form
-                className="flex w-full gap-2 sm:w-auto"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setOrganizationPage(0);
-                  void organizationsQuery.refetch();
-                }}
-              >
-                <div className="relative min-w-0 flex-1 sm:w-72">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    aria-label="Поиск образовательных организаций"
-                    value={organizationSearch}
-                    onChange={(event) => {
-                      setOrganizationSearch(event.target.value);
-                      setOrganizationPage(0);
-                    }}
-                    placeholder="Поиск по названию или коду"
-                    className={`${inputClass} pl-9`}
-                  />
-                </div>
-                <button type="submit" className={secondaryButton}>
-                  Найти
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-semibold text-[#1D3557]">
+                  Образовательные организации
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Список организаций вашего МСУ
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                <form
+                  className="flex gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setOrganizationPage(0);
+                    void organizationsQuery.refetch();
+                  }}
+                >
+                  <div className="relative w-56">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      aria-label="Поиск образовательных организаций"
+                      value={organizationSearch}
+                      onChange={(event) => {
+                        setOrganizationSearch(event.target.value);
+                        setOrganizationPage(0);
+                      }}
+                      placeholder="Поиск по названию или коду"
+                      className={`${inputClass} pl-9`}
+                    />
+                  </div>
+
+                  <button type="submit" className={secondaryButton}>
+                    Найти
+                  </button>
+                </form>
+
+                <button
+                  type="button"
+                  className={secondaryButton}
+                  onClick={() => {
+                    if (organizationEditMode) {
+                      setEditingOrganizationId(null);
+                      setEditingOrganizationCode("");
+                      setEditingOrganizationName("");
+                    }
+
+                    setOrganizationEditMode((value) => !value);
+                  }}
+                >
+                  <Pencil size={16} />
+                  {organizationEditMode
+                    ? "Завершить редактирование"
+                    : "Режим редактирования"}
                 </button>
-              </form>
-
-              <button
-                type="button"
-                className={secondaryButton}
-                onClick={() => {
-                  if (organizationEditMode) {
-                    setEditingOrganizationId(null);
-                    setEditingOrganizationCode("");
-                    setEditingOrganizationName("");
-                  }
-
-                  setOrganizationEditMode(!organizationEditMode);
-                }}
-              >
-                <Pencil size={16} />
-                {organizationEditMode
-                  ? "Завершить редактирование"
-                  : "Режим редактирования"}
-              </button>
+              </div>
             </div>
 
             {organizationsQuery.isPending ? (
@@ -605,7 +617,12 @@ export function MsuAdminDashboard() {
             ) : (
               <>
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-135 text-left text-sm">
+                  <table className="w-full min-w-150 table-fixed text-left text-sm">
+                    <colgroup>
+                      <col className="w-32" />
+                      <col />
+                      {organizationEditMode && <col className="w-32" />}
+                    </colgroup>
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3 font-semibold">Код</th>
