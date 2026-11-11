@@ -544,7 +544,7 @@ export function MsuAdminDashboard() {
 
         {section === "organizations" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <h2 className="font-semibold text-[#1D3557]">
                   Образовательные организации
@@ -554,16 +554,16 @@ export function MsuAdminDashboard() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <form
-                  className="flex gap-2"
+                  className="flex min-w-0 flex-1 gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     setOrganizationPage(0);
                     void organizationsQuery.refetch();
                   }}
                 >
-                  <div className="relative w-56">
+                  <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
                     <Search
                       size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -587,7 +587,7 @@ export function MsuAdminDashboard() {
 
                 <button
                   type="button"
-                  className={secondaryButton}
+                  className={`${secondaryButton} whitespace-nowrap`}
                   onClick={() => {
                     if (organizationEditMode) {
                       setEditingOrganizationId(null);
@@ -617,11 +617,11 @@ export function MsuAdminDashboard() {
             ) : (
               <>
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-150 table-fixed text-left text-sm">
+                  <table className="w-full text-left text-sm">
                     <colgroup>
                       <col className="w-32" />
                       <col />
-                      {organizationEditMode && <col className="w-32" />}
+                      {organizationEditMode && <col className="w-64" />}
                     </colgroup>
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
@@ -684,12 +684,11 @@ export function MsuAdminDashboard() {
 
                             {organizationEditMode && (
                               <td className="px-3 py-4">
-                                <div className="flex justify-end gap-2">
+                                <div className="flex flex-wrap justify-end gap-2">
                                   {isEditing ? (
                                     <>
                                       <button
                                         type="button"
-                                        title="Сохранить"
                                         disabled={
                                           updateOrganizationMutation.isPending
                                         }
@@ -721,27 +720,34 @@ export function MsuAdminDashboard() {
                                             name,
                                           });
                                         }}
-                                        className="rounded-lg border border-emerald-200 p-2 text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+                                        className={primaryButton}
                                       >
-                                        <Save size={17} />
+                                        <Check size={15} />
+                                        {updateOrganizationMutation.isPending
+                                          ? "Сохранение..."
+                                          : "Сохранить"}
                                       </button>
 
                                       <button
                                         type="button"
-                                        title="Отменить"
-                                        onClick={() =>
-                                          setEditingOrganizationId(null)
+                                        disabled={
+                                          updateOrganizationMutation.isPending
                                         }
-                                        className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                                        onClick={() => {
+                                          setEditingOrganizationId(null);
+                                          setEditingOrganizationCode("");
+                                          setEditingOrganizationName("");
+                                        }}
+                                        className={secondaryButton}
                                       >
-                                        <X size={17} />
+                                        <X size={15} />
+                                        Отмена
                                       </button>
                                     </>
                                   ) : (
                                     <>
                                       <button
                                         type="button"
-                                        title="Редактировать"
                                         onClick={() => {
                                           setEditingOrganizationId(
                                             organization.id,
@@ -753,16 +759,18 @@ export function MsuAdminDashboard() {
                                             organization.name,
                                           );
                                         }}
-                                        className="rounded-lg border border-slate-200 p-2 text-[#457B9D] transition hover:bg-slate-50"
+                                        className={secondaryButton}
+                                        aria-label={`Редактировать ${organization.name}`}
                                       >
-                                        <Pencil size={17} />
+                                        <Pencil size={15} />
+                                        Редактировать
                                       </button>
 
                                       <button
                                         type="button"
-                                        title="Удалить"
                                         disabled={
-                                          deleteOrganizationMutation.isPending
+                                          deleteOrganizationMutation.isPending ||
+                                          updateOrganizationMutation.isPending
                                         }
                                         onClick={() => {
                                           if (
@@ -775,9 +783,11 @@ export function MsuAdminDashboard() {
                                             );
                                           }
                                         }}
-                                        className="rounded-lg border border-red-200 p-2 text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label={`Удалить ${organization.name}`}
                                       >
-                                        <Trash2 size={17} />
+                                        <Trash2 size={15} />
+                                        Удалить
                                       </button>
                                     </>
                                   )}
