@@ -21,6 +21,10 @@ import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
+import {
+  OrganizationHierarchyCard,
+  type OrganizationContext,
+} from "@/components/dashboard/organization-hierarchy-card";
 
 type Msu = {
   id: number;
@@ -225,6 +229,13 @@ export function MsuAdminDashboard() {
     enabled: user?.role === "MSU_ADMIN",
   });
 
+  const organizationContextQuery = useQuery({
+    queryKey: ["organization-context", user?.id],
+    queryFn: () =>
+      apiFetch<OrganizationContext>("/api/organization-context/current"),
+    enabled: user?.role === "MSU_ADMIN",
+  });
+
   const invalidateDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -403,41 +414,50 @@ export function MsuAdminDashboard() {
         )}
 
         {section === "overview" && (
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard
-              title="Моё МСУ"
-              value={
-                msuQuery.isPending ? "—" : (msuQuery.data?.name ?? "Нет данных")
-              }
-              description={
-                msuQuery.data
-                  ? `Код: ${msuQuery.data.code}`
-                  : "Текущее муниципальное управление"
-              }
-              icon={<Building2 size={21} />}
+          <>
+            <OrganizationHierarchyCard
+              context={organizationContextQuery.data}
+              isLoading={organizationContextQuery.isPending}
+              isError={organizationContextQuery.isError}
             />
-            <StatCard
-              title="Образовательные организации"
-              value={
-                organizationsQuery.isPending
-                  ? "—"
-                  : (organizationsQuery.data?.totalElements ?? 0)
-              }
-              description="Организации, относящиеся к вашему МСУ"
-              icon={<Building2 size={21} />}
-            />
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <StatCard
+                title="Моё МСУ"
+                value={
+                  msuQuery.isPending
+                    ? "—"
+                    : (msuQuery.data?.name ?? "Нет данных")
+                }
+                description={
+                  msuQuery.data
+                    ? `Код: ${msuQuery.data.code}`
+                    : "Текущее муниципальное управление"
+                }
+                icon={<Building2 size={21} />}
+              />
+              <StatCard
+                title="Образовательные организации"
+                value={
+                  organizationsQuery.isPending
+                    ? "—"
+                    : (organizationsQuery.data?.totalElements ?? 0)
+                }
+                description="Организации, относящиеся к вашему МСУ"
+                icon={<Building2 size={21} />}
+              />
 
-            <StatCard
-              title="Заявки на подтверждение"
-              value={
-                pendingAdminsQuery.isPending || pendingMentorsQuery.isPending
-                  ? "—"
-                  : pendingAdmins.length + pendingMentors.length
-              }
-              description={`Администраторы ОО: ${pendingAdmins.length} · Наставники: ${pendingMentors.length}`}
-              icon={<ClipboardCheck size={21} />}
-            />
-          </section>
+              <StatCard
+                title="Заявки на подтверждение"
+                value={
+                  pendingAdminsQuery.isPending || pendingMentorsQuery.isPending
+                    ? "—"
+                    : pendingAdmins.length + pendingMentors.length
+                }
+                description={`Администраторы ОО: ${pendingAdmins.length} · Наставники: ${pendingMentors.length}`}
+                icon={<ClipboardCheck size={21} />}
+              />
+            </section>
+          </>
         )}
 
         {section === "overview" && (

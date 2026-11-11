@@ -16,6 +16,10 @@ import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
+import {
+  OrganizationHierarchyCard,
+  type OrganizationContext,
+} from "@/components/dashboard/organization-hierarchy-card";
 
 type AdminUser = {
   id: number;
@@ -114,6 +118,13 @@ export function OoAdminDashboard() {
           size: 100,
         },
       }),
+    enabled: user?.role === "OO_ADMIN",
+  });
+
+  const organizationContextQuery = useQuery({
+    queryKey: ["organization-context", user?.id],
+    queryFn: () =>
+      apiFetch<OrganizationContext>("/api/organization-context/current"),
     enabled: user?.role === "OO_ADMIN",
   });
 
@@ -242,6 +253,11 @@ export function OoAdminDashboard() {
 
         {section === "overview" && (
           <>
+            <OrganizationHierarchyCard
+              context={organizationContextQuery.data}
+              isLoading={organizationContextQuery.isPending}
+              isError={organizationContextQuery.isError}
+            />
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <StatCard
                 title="Наставляемые"

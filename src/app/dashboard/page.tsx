@@ -27,6 +27,8 @@ import { MsuAdminDashboard } from "@/components/dashboard/msu-admin-dashboard";
 import { OoAdminDashboard } from "@/components/dashboard/oo-admin-dashboard";
 import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
+import { OrganizationHierarchyCard } from "@/components/dashboard/organization-hierarchy-card";
+import type { OrganizationContext } from "@/components/dashboard/organization-hierarchy-card";
 
 type Msu = {
   id: number;
@@ -204,6 +206,13 @@ export default function DashboardPage() {
       router.replace("/login");
     }
   }, [isInitialized, user, router]);
+
+  const organizationContextQuery = useQuery({
+    queryKey: ["organization-context", user?.id],
+    queryFn: () =>
+      apiFetch<OrganizationContext>("/api/organization-context/current"),
+    enabled: isInitialized && isRegionAdmin,
+  });
 
   // Список МСУ только текущего региона.
   const msusQuery = useQuery({
@@ -593,6 +602,11 @@ export default function DashboardPage() {
         )}
         {section === "overview" && (
           <>
+            <OrganizationHierarchyCard
+              context={organizationContextQuery.data}
+              isLoading={organizationContextQuery.isPending}
+              isError={organizationContextQuery.isError}
+            />
             <section>
               <h3 className="text-lg font-semibold text-[#1D3557]">
                 Добро пожаловать в кабинет
