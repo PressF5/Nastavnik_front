@@ -24,6 +24,8 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { MsuAdminDashboard } from "@/components/dashboard/msu-admin-dashboard";
+import { UserAccountCard } from "@/components/dashboard/user-account-card";
+import { UserRequestCard } from "@/components/dashboard/user-request-card";
 
 type Msu = {
   id: number;
@@ -1219,105 +1221,45 @@ export default function DashboardPage() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {pendingAdmins.map((admin) => (
-                  <article
+                  <UserRequestCard
                     key={admin.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={admin.accountStatus} />
-                      </div>
-
-                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(admin)}
-                      </h4>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {admin.email}
-                      </p>
-
-                      <div className="mt-4">
-                        <span
-                          className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-medium ${
-                            admin.role === "MSU_ADMIN"
-                              ? "bg-indigo-50 text-indigo-700"
-                              : "bg-sky-50 text-sky-700"
-                          }`}
-                        >
-                          {admin.role === "MSU_ADMIN"
-                            ? "Администратор МСУ"
-                            : "Администратор ОО"}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Муниципальное управление
-                          </p>
-
-                          <p className="mt-1 text-sm font-medium text-slate-700">
-                            {admin.msuName ?? "Не указано"}
-                          </p>
-                        </div>
-
-                        {admin.role === "OO_ADMIN" && (
-                          <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                              Образовательная организация
-                            </p>
-
-                            <p className="mt-1 text-sm font-medium text-slate-700">
-                              {admin.educationalOrganizationName ??
-                                "Не указана"}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          approvalMutation.mutate({
-                            id: admin.id,
-                            action: "approve",
-                          })
-                        }
-                        disabled={approvalMutation.isPending}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Check size={16} />
-                        Подтвердить
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const confirmed = window.confirm(
-                            `Отклонить заявку пользователя ${fullName(admin)}?`,
-                          );
-
-                          if (confirmed) {
-                            approvalMutation.mutate({
-                              id: admin.id,
-                              action: "reject",
-                            });
-                          }
-                        }}
-                        disabled={approvalMutation.isPending}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <X size={16} />
-                        Отклонить
-                      </button>
-                    </div>
-                  </article>
+                    user={admin}
+                    icon={<Users size={22} />}
+                    roleLabel={
+                      admin.role === "MSU_ADMIN"
+                        ? "Администратор МСУ"
+                        : "Администратор образовательной организации"
+                    }
+                    details={[
+                      {
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
+                      },
+                      ...(admin.role === "OO_ADMIN"
+                        ? [
+                            {
+                              label: "Образовательная организация",
+                              value:
+                                admin.educationalOrganizationName ??
+                                "Не указана",
+                            },
+                          ]
+                        : []),
+                    ]}
+                    pending={approvalMutation.isPending}
+                    onApprove={() =>
+                      approvalMutation.mutate({
+                        id: admin.id,
+                        action: "approve",
+                      })
+                    }
+                    onReject={() =>
+                      approvalMutation.mutate({
+                        id: admin.id,
+                        action: "reject",
+                      })
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -1371,104 +1313,27 @@ export default function DashboardPage() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {allOoAdmins.map((admin) => (
-                  <article
+                  <UserAccountCard
                     key={admin.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Building2 size={22} />
-                        </div>
-
-                        <StatusBadge status={admin.accountStatus} />
-                      </div>
-
-                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(admin)}
-                      </h4>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {admin.email}
-                      </p>
-
-                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Образовательная организация
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
-                            {admin.educationalOrganizationName ?? "Не указана"}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Муниципальное управление
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
-                            {admin.msuName ?? "Не указано"}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Состояние учётной записи
-                          </p>
-
-                          <div className="mt-2 flex items-center gap-2">
-                            <span
-                              className={`size-2 rounded-full ${
-                                admin.isBlock ? "bg-red-500" : "bg-emerald-500"
-                              }`}
-                            />
-
-                            <span
-                              className={`text-sm font-medium ${
-                                admin.isBlock
-                                  ? "text-red-700"
-                                  : "text-emerald-700"
-                              }`}
-                            >
-                              {admin.isBlock
-                                ? "Заблокирован"
-                                : "Не заблокирован"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {admin.accountStatus === "ACCEPTED" && (
-                      <div className="mt-5 border-t border-slate-100 pt-4">
-                        <button
-                          type="button"
-                          disabled={blockMutation.isPending}
-                          onClick={() => {
-                            const action = admin.isBlock ? "unblock" : "block";
-
-                            const message = admin.isBlock
-                              ? `Разблокировать учётную запись ${fullName(admin)}?`
-                              : `Заблокировать учётную запись ${fullName(admin)}?`;
-
-                            if (window.confirm(message)) {
-                              blockMutation.mutate({
-                                id: admin.id,
-                                action,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                            admin.isBlock
-                              ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                              : "border-red-200 text-red-700 hover:bg-red-50"
-                          }`}
-                        >
-                          {admin.isBlock ? "Разблокировать" : "Заблокировать"}
-                        </button>
-                      </div>
-                    )}
-                  </article>
+                    user={admin}
+                    icon={<Building2 size={22} />}
+                    roleLabel="Администратор образовательной организации"
+                    details={[
+                      {
+                        label: "Образовательная организация",
+                        value:
+                          admin.educationalOrganizationName ?? "Не указана",
+                      },
+                      {
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
+                      },
+                    ]}
+                    blockPending={blockMutation.isPending}
+                    onToggleBlock={(action) =>
+                      blockMutation.mutate({ id: admin.id, action })
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -1511,82 +1376,22 @@ export default function DashboardPage() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {allAdmins.map((admin) => (
-                  <article
+                  <UserAccountCard
                     key={admin.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={admin.accountStatus} />
-                      </div>
-
-                      <h4 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(admin)}
-                      </h4>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {admin.email}
-                      </p>
-
-                      <div className="mt-5 border-t border-slate-100 pt-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          Состояние учётной записи
-                        </p>
-
-                        <div className="mt-2 flex items-center gap-2">
-                          <span
-                            className={`size-2 rounded-full ${
-                              admin.isBlock ? "bg-red-500" : "bg-emerald-500"
-                            }`}
-                          />
-
-                          <span
-                            className={`text-sm font-medium ${
-                              admin.isBlock
-                                ? "text-red-700"
-                                : "text-emerald-700"
-                            }`}
-                          >
-                            {admin.isBlock ? "Заблокирован" : "Не заблокирован"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {admin.accountStatus === "ACCEPTED" && (
-                      <div className="mt-5 border-t border-slate-100 pt-4">
-                        <button
-                          type="button"
-                          disabled={blockMutation.isPending}
-                          onClick={() => {
-                            const action = admin.isBlock ? "unblock" : "block";
-
-                            const message = admin.isBlock
-                              ? `Разблокировать учётную запись ${fullName(admin)}?`
-                              : `Заблокировать учётную запись ${fullName(admin)}?`;
-
-                            if (window.confirm(message)) {
-                              blockMutation.mutate({
-                                id: admin.id,
-                                action,
-                              });
-                            }
-                          }}
-                          className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                            admin.isBlock
-                              ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                              : "border-red-200 text-red-700 hover:bg-red-50"
-                          }`}
-                        >
-                          {admin.isBlock ? "Разблокировать" : "Заблокировать"}
-                        </button>
-                      </div>
-                    )}
-                  </article>
+                    user={admin}
+                    icon={<Users size={22} />}
+                    roleLabel="Администратор МСУ"
+                    details={[
+                      {
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
+                      },
+                    ]}
+                    blockPending={blockMutation.isPending}
+                    onToggleBlock={(action) =>
+                      blockMutation.mutate({ id: admin.id, action })
+                    }
+                  />
                 ))}
               </div>
             )}

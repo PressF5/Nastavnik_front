@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
+import { UserAccountCard } from "@/components/dashboard/user-account-card";
+import { UserRequestCard } from "@/components/dashboard/user-request-card";
 
 type Msu = {
   id: number;
@@ -808,74 +810,32 @@ export function MsuAdminDashboard() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {pendingAdmins.map((admin) => (
-                  <article
+                  <UserRequestCard
                     key={admin.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={admin.accountStatus} />
-                      </div>
-
-                      <h3 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(admin)}
-                      </h3>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {admin.email}
-                      </p>
-
-                      <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Тип учётной записи
-                      </p>
-
-                      <p className="mt-1 text-sm font-medium text-slate-700">
-                        Администратор образовательной организации
-                      </p>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                      <button
-                        type="button"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={decisionMutation.isPending}
-                        onClick={() =>
-                          decisionMutation.mutate({
-                            id: admin.id,
-                            action: "approve",
-                          })
-                        }
-                      >
-                        <Check size={15} />
-                        Подтвердить
-                      </button>
-
-                      <button
-                        type="button"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={decisionMutation.isPending}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Отклонить заявку ${fullName(admin)}?`,
-                            )
-                          ) {
-                            decisionMutation.mutate({
-                              id: admin.id,
-                              action: "reject",
-                            });
-                          }
-                        }}
-                      >
-                        <X size={15} />
-                        Отклонить
-                      </button>
-                    </div>
-                  </article>
+                    user={admin}
+                    icon={<Building2 size={22} />}
+                    roleLabel="Администратор образовательной организации"
+                    details={[
+                      {
+                        label: "Образовательная организация",
+                        value:
+                          admin.educationalOrganizationName ?? "Не указана",
+                      },
+                    ]}
+                    pending={decisionMutation.isPending}
+                    onApprove={() =>
+                      decisionMutation.mutate({
+                        id: admin.id,
+                        action: "approve",
+                      })
+                    }
+                    onReject={() =>
+                      decisionMutation.mutate({
+                        id: admin.id,
+                        action: "reject",
+                      })
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -901,71 +861,32 @@ export function MsuAdminDashboard() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {pendingMentors.map((mentor) => (
-                  <article
+                  <UserRequestCard
                     key={mentor.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={mentor.accountStatus} />
-                      </div>
-
-                      <h3 className="mt-4 font-semibold text-[#1D3557]">
-                        {fullName(mentor)}
-                      </h3>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {mentor.email}
-                      </p>
-
-                      <p className="mt-3 text-sm text-slate-600">
-                        {mentor.educationalOrganizationName ??
-                          "Образовательная организация не указана"}
-                      </p>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                      <button
-                        type="button"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                        disabled={decisionMutation.isPending}
-                        onClick={() =>
-                          decisionMutation.mutate({
-                            id: mentor.id,
-                            action: "approve",
-                          })
-                        }
-                      >
-                        <Check size={15} />
-                        Подтвердить
-                      </button>
-
-                      <button
-                        type="button"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                        disabled={decisionMutation.isPending}
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Отклонить заявку наставника ${fullName(mentor)}?`,
-                            )
-                          ) {
-                            decisionMutation.mutate({
-                              id: mentor.id,
-                              action: "reject",
-                            });
-                          }
-                        }}
-                      >
-                        <X size={15} />
-                        Отклонить
-                      </button>
-                    </div>
-                  </article>
+                    user={mentor}
+                    icon={<Users size={22} />}
+                    roleLabel="Наставник"
+                    details={[
+                      {
+                        label: "Образовательная организация",
+                        value:
+                          mentor.educationalOrganizationName ?? "Не указана",
+                      },
+                    ]}
+                    pending={decisionMutation.isPending}
+                    onApprove={() =>
+                      decisionMutation.mutate({
+                        id: mentor.id,
+                        action: "approve",
+                      })
+                    }
+                    onReject={() =>
+                      decisionMutation.mutate({
+                        id: mentor.id,
+                        action: "reject",
+                      })
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -991,83 +912,23 @@ export function MsuAdminDashboard() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {mentors.map((mentor) => (
-                  <article
+                  <UserAccountCard
                     key={mentor.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={mentor.accountStatus} />
-                      </div>
-
-                      <h3 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(mentor)}
-                      </h3>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {mentor.email}
-                      </p>
-
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          Образовательная организация
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">
-                          {mentor.educationalOrganizationName ?? "Не указана"}
-                        </p>
-                      </div>
-
-                      <div className="mt-3">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          СОСТОЯНИЕ УЧЁТНОЙ ЗАПИСИ
-                        </p>
-                        <p
-                          className={`mt-1 text-sm font-medium ${
-                            mentor.isBlock ? "text-red-700" : "text-emerald-700"
-                          }`}
-                        >
-                          {mentor.isBlock ? "Заблокирован" : "Не заблокирован"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {mentor.accountStatus === "ACCEPTED" && (
-                      <div className="mt-5 border-t border-slate-100 pt-4">
-                        <button
-                          type="button"
-                          disabled={blockMutation.isPending}
-                          onClick={() => {
-                            const action = mentor.isBlock ? "unblock" : "block";
-                            const verb = mentor.isBlock
-                              ? "Разблокировать"
-                              : "Заблокировать";
-
-                            if (
-                              window.confirm(
-                                `${verb} учётную запись наставника ${fullName(mentor)}?`,
-                              )
-                            ) {
-                              blockMutation.mutate({
-                                id: mentor.id,
-                                action,
-                              });
-                            }
-                          }}
-                          className={
-                            mentor.isBlock
-                              ? "inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 px-3 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
-                              : "inline-flex w-full items-center justify-center rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                          }
-                        >
-                          {mentor.isBlock ? "Разблокировать" : "Заблокировать"}
-                        </button>
-                      </div>
-                    )}
-                  </article>
+                    user={mentor}
+                    icon={<Users size={22} />}
+                    roleLabel="Наставник"
+                    details={[
+                      {
+                        label: "Образовательная организация",
+                        value:
+                          mentor.educationalOrganizationName ?? "Не указана",
+                      },
+                    ]}
+                    blockPending={blockMutation.isPending}
+                    onToggleBlock={(action) =>
+                      blockMutation.mutate({ id: mentor.id, action })
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -1093,83 +954,23 @@ export function MsuAdminDashboard() {
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {accounts.map((admin) => (
-                  <article
+                  <UserAccountCard
                     key={admin.id}
-                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
-                          <Users size={22} />
-                        </div>
-
-                        <StatusBadge status={admin.accountStatus} />
-                      </div>
-
-                      <h3 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                        {fullName(admin)}
-                      </h3>
-
-                      <p className="mt-1 break-all text-sm text-slate-500">
-                        {admin.email}
-                      </p>
-
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          Тип учётной записи
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">
-                          Администратор образовательной организации
-                        </p>
-                      </div>
-
-                      <div className="mt-3">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                          СОСТОЯНИЕ УЧЁТНОЙ ЗАПИСИ
-                        </p>
-                        <p
-                          className={`mt-1 text-sm font-medium ${
-                            admin.isBlock ? "text-red-700" : "text-emerald-700"
-                          }`}
-                        >
-                          {admin.isBlock ? "Заблокирован" : "Не заблокирован"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {admin.accountStatus === "ACCEPTED" && (
-                      <div className="mt-5 border-t border-slate-100 pt-4">
-                        <button
-                          type="button"
-                          disabled={blockMutation.isPending}
-                          onClick={() => {
-                            const action = admin.isBlock ? "unblock" : "block";
-                            const verb = admin.isBlock
-                              ? "Разблокировать"
-                              : "Заблокировать";
-
-                            if (
-                              window.confirm(
-                                `${verb} учётную запись ${fullName(admin)}?`,
-                              )
-                            ) {
-                              blockMutation.mutate({
-                                id: admin.id,
-                                action,
-                              });
-                            }
-                          }}
-                          className={
-                            admin.isBlock
-                              ? "inline-flex w-full items-center justify-center rounded-lg border border-emerald-200 px-3 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
-                              : "inline-flex w-full items-center justify-center rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                          }
-                        >
-                          {admin.isBlock ? "Разблокировать" : "Заблокировать"}
-                        </button>
-                      </div>
-                    )}
-                  </article>
+                    user={admin}
+                    icon={<Building2 size={22} />}
+                    roleLabel="Администратор образовательной организации"
+                    details={[
+                      {
+                        label: "Образовательная организация",
+                        value:
+                          admin.educationalOrganizationName ?? "Не указана",
+                      },
+                    ]}
+                    blockPending={blockMutation.isPending}
+                    onToggleBlock={(action) =>
+                      blockMutation.mutate({ id: admin.id, action })
+                    }
+                  />
                 ))}
               </div>
             )}
