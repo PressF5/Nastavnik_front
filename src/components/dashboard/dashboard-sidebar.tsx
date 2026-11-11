@@ -10,6 +10,7 @@ import {
   UserRound,
   X,
   SlidersHorizontal,
+  Users,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -50,6 +51,16 @@ const msuNavigation: {
   },
   { id: "requests", label: "Заявки администраторов ОО", icon: ClipboardCheck },
   { id: "oo-accounts", label: "Администраторы ОО", icon: UserRound },
+  {
+    id: "mentor-requests",
+    label: "Заявки наставников",
+    icon: ClipboardCheck,
+  },
+  {
+    id: "mentor-accounts",
+    label: "Наставники",
+    icon: Users,
+  },
 ];
 
 const profileFieldsNavigation = {

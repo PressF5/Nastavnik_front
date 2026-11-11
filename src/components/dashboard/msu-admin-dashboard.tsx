@@ -43,6 +43,8 @@ type AdminUser = {
   isBlock: boolean;
   role: string;
   accountStatus: "PENDING" | "ACCEPTED" | "REJECTED";
+  educationalOrganizationName?: string | null;
+  msuName?: string | null;
 };
 
 type SpringPage<T> = {
@@ -180,6 +182,33 @@ export function MsuAdminDashboard() {
     enabled: user?.role === "MSU_ADMIN",
   });
 
+  const pendingMentorsQuery = useQuery({
+    queryKey: ["msu-admin", user?.id, "pending-mentors"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "MENTOR",
+          status: "PENDING",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: user?.role === "MSU_ADMIN",
+  });
+
+  const mentorsQuery = useQuery({
+    queryKey: ["msu-admin", user?.id, "mentors"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "MENTOR",
+          page: 0,
+          size: 100,
+        },
+      }),
+    enabled: user?.role === "MSU_ADMIN",
+  });
+
   const invalidateDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -193,6 +222,12 @@ export function MsuAdminDashboard() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["msu-admin", user?.id, "oo-admins"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["msu-admin", user?.id, "pending-mentors"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["msu-admin", user?.id, "mentors"],
       }),
     ]);
   };
@@ -211,9 +246,10 @@ export function MsuAdminDashboard() {
     onSuccess: async (_, variables) => {
       toast.success(
         variables.action === "approve"
-          ? "Учётная запись администратора ОО подтверждена."
-          : "Заявка администратора ОО отклонена.",
+          ? "Учётная запись подтверждена."
+          : "Заявка отклонена.",
       );
+
       await invalidateDashboard();
     },
     onError: (error) =>
@@ -287,16 +323,22 @@ export function MsuAdminDashboard() {
   const pendingAdmins = pendingAdminsQuery.data?.content ?? [];
   const organizations = organizationsQuery.data?.content ?? [];
   const accounts = accountsQuery.data?.content ?? [];
+  const pendingMentors = pendingMentorsQuery.data?.content ?? [];
+  const mentors = mentorsQuery.data?.content ?? [];
   const isRefreshing =
     msuQuery.isFetching ||
     organizationsQuery.isFetching ||
     pendingAdminsQuery.isFetching ||
-    accountsQuery.isFetching;
+    accountsQuery.isFetching ||
+    pendingMentorsQuery.isFetching ||
+    mentorsQuery.isFetching;
   const hasError =
     msuQuery.isError ||
     organizationsQuery.isError ||
     pendingAdminsQuery.isError ||
-    accountsQuery.isError;
+    accountsQuery.isError ||
+    pendingMentorsQuery.isError ||
+    mentorsQuery.isError;
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
@@ -767,6 +809,201 @@ export function MsuAdminDashboard() {
                     </div>
                   </article>
                 ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {section === "mentor-requests" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 className="font-semibold text-[#1D3557]">Заявки наставников</h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Подтверждение или отклонение регистрации наставников вашего МСУ
+            </p>
+
+            {pendingMentorsQuery.isPending ? (
+              <p className="py-10 text-sm text-slate-500">
+                Загружаем заявки...
+              </p>
+            ) : pendingMentors.length === 0 ? (
+              <p className="py-10 text-sm text-slate-500">
+                Нет заявок наставников, ожидающих подтверждения.
+              </p>
+            ) : (
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {pendingMentors.map((mentor) => (
+                  <article
+                    key={mentor.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-11 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                          <Users size={22} />
+                        </div>
+
+                        <StatusBadge status={mentor.accountStatus} />
+                      </div>
+
+                      <h3 className="mt-4 font-semibold text-[#1D3557]">
+                        {fullName(mentor)}
+                      </h3>
+
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {mentor.email}
+                      </p>
+
+                      <p className="mt-3 text-sm text-slate-600">
+                        {mentor.educationalOrganizationName ??
+                          "Образовательная организация не указана"}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                        disabled={decisionMutation.isPending}
+                        onClick={() =>
+                          decisionMutation.mutate({
+                            id: mentor.id,
+                            action: "approve",
+                          })
+                        }
+                      >
+                        <Check size={15} />
+                        Подтвердить
+                      </button>
+
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        disabled={decisionMutation.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Отклонить заявку наставника ${fullName(mentor)}?`,
+                            )
+                          ) {
+                            decisionMutation.mutate({
+                              id: mentor.id,
+                              action: "reject",
+                            });
+                          }
+                        }}
+                      >
+                        <X size={15} />
+                        Отклонить
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {section === "mentor-accounts" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <h2 className="font-semibold text-[#1D3557]">Наставники</h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Учётные записи наставников образовательных организаций вашего МСУ
+            </p>
+
+            {mentorsQuery.isPending ? (
+              <p className="py-10 text-sm text-slate-500">
+                Загружаем наставников...
+              </p>
+            ) : mentors.length === 0 ? (
+              <p className="py-10 text-sm text-slate-500">
+                Наставники не найдены.
+              </p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-180 text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-3 py-3 font-semibold">ФИО</th>
+                      <th className="px-3 py-3 font-semibold">Email</th>
+                      <th className="px-3 py-3 font-semibold">ОО</th>
+                      <th className="px-3 py-3 font-semibold">Статус</th>
+                      <th className="px-3 py-3 font-semibold">Блокировка</th>
+                      <th className="px-3 py-3 font-semibold">Действие</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100">
+                    {mentors.map((mentor) => (
+                      <tr key={mentor.id}>
+                        <td className="px-3 py-4 font-medium text-slate-900">
+                          {fullName(mentor)}
+                        </td>
+
+                        <td className="px-3 py-4 text-slate-600">
+                          {mentor.email}
+                        </td>
+
+                        <td className="px-3 py-4 text-slate-600">
+                          {mentor.educationalOrganizationName ?? "—"}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          <StatusBadge status={mentor.accountStatus} />
+                        </td>
+
+                        <td className="px-3 py-4">
+                          {mentor.isBlock ? (
+                            <span className="font-medium text-red-700">
+                              Заблокирован
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">Нет</span>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          {mentor.accountStatus === "ACCEPTED" && (
+                            <button
+                              type="button"
+                              disabled={blockMutation.isPending}
+                              onClick={() => {
+                                const action = mentor.isBlock
+                                  ? "unblock"
+                                  : "block";
+
+                                const verb = mentor.isBlock
+                                  ? "Разблокировать"
+                                  : "Заблокировать";
+
+                                if (
+                                  window.confirm(
+                                    `${verb} учётную запись наставника ${fullName(mentor)}?`,
+                                  )
+                                ) {
+                                  blockMutation.mutate({
+                                    id: mentor.id,
+                                    action,
+                                  });
+                                }
+                              }}
+                              className={
+                                mentor.isBlock
+                                  ? "rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                                  : "rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              }
+                            >
+                              {mentor.isBlock
+                                ? "Разблокировать"
+                                : "Заблокировать"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>

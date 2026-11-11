@@ -9,7 +9,9 @@ export type DashboardSection =
   | "organizations"
   | "requests"
   | "accounts"
-  | "oo-accounts";
+  | "oo-accounts"
+  | "mentor-requests"
+  | "mentor-accounts";
 
 type DashboardShellContextValue = {
   section: DashboardSection;
