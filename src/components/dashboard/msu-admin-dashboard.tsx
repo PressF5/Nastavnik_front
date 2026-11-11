@@ -563,7 +563,7 @@ export function MsuAdminDashboard() {
                     void organizationsQuery.refetch();
                   }}
                 >
-                  <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
+                  <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
                     <Search
                       size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -616,185 +616,185 @@ export function MsuAdminDashboard() {
               </p>
             ) : (
               <>
-                <div className="mt-4 overflow-x-auto">
-                  <table className="w-full table-auto text-left text-sm">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-3 py-3 font-semibold">Код</th>
-                        <th className="px-3 py-3 font-semibold">Название</th>
-                        {organizationEditMode && (
-                          <th className="w-[1%] whitespace-nowrap px-3 py-3 text-right font-semibold">
-                            Действия
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {organizations.map((organization) => {
+                    const isEditing = editingOrganizationId === organization.id;
 
-                    <tbody className="divide-y divide-slate-100">
-                      {organizations.map((organization) => {
-                        const isEditing =
-                          editingOrganizationId === organization.id;
+                    return (
+                      <article
+                        key={organization.id}
+                        className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                      >
+                        {isEditing ? (
+                          <form
+                            onSubmit={(event) => {
+                              event.preventDefault();
 
-                        return (
-                          <tr key={organization.id}>
-                            <td className="px-3 py-4">
-                              {isEditing ? (
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={editingOrganizationCode}
-                                  onChange={(event) =>
-                                    setEditingOrganizationCode(
-                                      event.target.value,
-                                    )
-                                  }
-                                  className={inputClass}
-                                />
-                              ) : (
-                                <span className="text-slate-600">
-                                  {organization.code}
+                              const code = Number(editingOrganizationCode);
+                              const name = editingOrganizationName.trim();
+
+                              if (!Number.isInteger(code) || code <= 0) {
+                                toast.error(
+                                  "Код должен быть положительным целым числом.",
+                                );
+                                return;
+                              }
+
+                              if (!name) {
+                                toast.error("Укажите название ОО.");
+                                return;
+                              }
+
+                              updateOrganizationMutation.mutate({
+                                id: organization.id,
+                                code,
+                                name,
+                              });
+                            }}
+                            className="flex flex-col gap-4"
+                          >
+                            <div>
+                              <h3 className="font-semibold text-[#1D3557]">
+                                Редактирование ОО
+                              </h3>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Измените код или название организации
+                              </p>
+                            </div>
+
+                            <label className="text-sm font-medium text-slate-600">
+                              Код ОО
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                required
+                                value={editingOrganizationCode}
+                                onChange={(event) =>
+                                  setEditingOrganizationCode(event.target.value)
+                                }
+                                className={`${inputClass} mt-1.5`}
+                              />
+                            </label>
+
+                            <label className="text-sm font-medium text-slate-600">
+                              Название ОО
+                              <input
+                                type="text"
+                                maxLength={500}
+                                required
+                                value={editingOrganizationName}
+                                onChange={(event) =>
+                                  setEditingOrganizationName(event.target.value)
+                                }
+                                className={`${inputClass} mt-1.5`}
+                              />
+                            </label>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="submit"
+                                disabled={updateOrganizationMutation.isPending}
+                                className={`${primaryButton} whitespace-nowrap`}
+                              >
+                                <Check size={15} />
+                                {updateOrganizationMutation.isPending
+                                  ? "Сохранение..."
+                                  : "Сохранить"}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={updateOrganizationMutation.isPending}
+                                onClick={() => {
+                                  setEditingOrganizationId(null);
+                                  setEditingOrganizationCode("");
+                                  setEditingOrganizationName("");
+                                }}
+                                className={`${secondaryButton} whitespace-nowrap`}
+                              >
+                                <X size={15} />
+                                Отмена
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            <div>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#457B9D]/10 text-[#457B9D]">
+                                  <Building2 size={22} />
+                                </div>
+
+                                <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                                  Код: {organization.code}
                                 </span>
-                              )}
-                            </td>
+                              </div>
 
-                            <td className="px-3 py-4">
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  maxLength={500}
-                                  value={editingOrganizationName}
-                                  onChange={(event) =>
-                                    setEditingOrganizationName(
-                                      event.target.value,
-                                    )
-                                  }
-                                  className={inputClass}
-                                />
-                              ) : (
-                                <span className="font-medium text-slate-900">
-                                  {organization.name}
-                                </span>
-                              )}
-                            </td>
+                              <h3 className="mt-4 font-semibold leading-6 text-[#1D3557]">
+                                {organization.name}
+                              </h3>
+
+                              <p className="mt-1 text-sm text-slate-500">
+                                Образовательная организация
+                              </p>
+                            </div>
 
                             {organizationEditMode && (
-                              <td className="whitespace-nowrap px-3 py-4">
-                                <div className="flex flex-nowrap justify-end gap-2">
-                                  {isEditing ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        disabled={
-                                          updateOrganizationMutation.isPending
-                                        }
-                                        onClick={() => {
-                                          const code = Number(
-                                            editingOrganizationCode,
-                                          );
-                                          const name =
-                                            editingOrganizationName.trim();
+                              <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingOrganizationId(organization.id);
+                                    setEditingOrganizationCode(
+                                      String(organization.code),
+                                    );
+                                    setEditingOrganizationName(
+                                      organization.name,
+                                    );
+                                  }}
+                                  disabled={
+                                    deleteOrganizationMutation.isPending
+                                  }
+                                  className={`${secondaryButton} whitespace-nowrap`}
+                                  aria-label={`Редактировать ${organization.name}`}
+                                >
+                                  <Pencil size={15} />
+                                  Редактировать
+                                </button>
 
-                                          if (
-                                            !Number.isInteger(code) ||
-                                            code <= 0
-                                          ) {
-                                            toast.error(
-                                              "Код должен быть положительным целым числом.",
-                                            );
-                                            return;
-                                          }
-
-                                          if (!name) {
-                                            toast.error("Укажите название ОО.");
-                                            return;
-                                          }
-
-                                          updateOrganizationMutation.mutate({
-                                            id: organization.id,
-                                            code,
-                                            name,
-                                          });
-                                        }}
-                                        className={`${primaryButton} whitespace-nowrap`}
-                                      >
-                                        <Check size={15} />
-                                        {updateOrganizationMutation.isPending
-                                          ? "Сохранение..."
-                                          : "Сохранить"}
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        disabled={
-                                          updateOrganizationMutation.isPending
-                                        }
-                                        onClick={() => {
-                                          setEditingOrganizationId(null);
-                                          setEditingOrganizationCode("");
-                                          setEditingOrganizationName("");
-                                        }}
-                                        className={`${secondaryButton} whitespace-nowrap`}
-                                      >
-                                        <X size={15} />
-                                        Отмена
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingOrganizationId(
-                                            organization.id,
-                                          );
-                                          setEditingOrganizationCode(
-                                            String(organization.code),
-                                          );
-                                          setEditingOrganizationName(
-                                            organization.name,
-                                          );
-                                        }}
-                                        className={`${secondaryButton} whitespace-nowrap`}
-                                        aria-label={`Редактировать ${organization.name}`}
-                                      >
-                                        <Pencil size={15} />
-                                        Редактировать
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        disabled={
-                                          deleteOrganizationMutation.isPending ||
-                                          updateOrganizationMutation.isPending
-                                        }
-                                        onClick={() => {
-                                          if (
-                                            window.confirm(
-                                              `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
-                                            )
-                                          ) {
-                                            deleteOrganizationMutation.mutate(
-                                              organization.id,
-                                            );
-                                          }
-                                        }}
-                                        className="whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        aria-label={`Удалить ${organization.name}`}
-                                      >
-                                        <Trash2 size={15} />
-                                        Удалить
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    deleteOrganizationMutation.isPending ||
+                                    updateOrganizationMutation.isPending
+                                  }
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
+                                      )
+                                    ) {
+                                      deleteOrganizationMutation.mutate(
+                                        organization.id,
+                                      );
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  aria-label={`Удалить ${organization.name}`}
+                                >
+                                  <Trash2 size={15} />
+                                  Удалить
+                                </button>
+                              </div>
                             )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          </>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
+
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
                   <span>
                     Всего: {organizationsQuery.data?.totalElements ?? 0}
