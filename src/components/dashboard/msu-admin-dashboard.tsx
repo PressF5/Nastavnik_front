@@ -138,6 +138,13 @@ export function MsuAdminDashboard() {
   >(null);
   const [editingOrganizationCode, setEditingOrganizationCode] = useState("");
   const [editingOrganizationName, setEditingOrganizationName] = useState("");
+  const [ooAdminSearchInput, setOoAdminSearchInput] = useState("");
+  const [ooAdminSearch, setOoAdminSearch] = useState("");
+  const [ooAdminPage, setOoAdminPage] = useState(0);
+
+  const [mentorSearchInput, setMentorSearchInput] = useState("");
+  const [mentorSearch, setMentorSearch] = useState("");
+  const [mentorPage, setMentorPage] = useState(0);
 
   const msuQuery = useQuery({
     queryKey: ["msu-admin", user?.id, "current-msu"],
@@ -177,10 +184,15 @@ export function MsuAdminDashboard() {
   });
 
   const accountsQuery = useQuery({
-    queryKey: ["msu-admin", user?.id, "oo-admins"],
+    queryKey: ["msu-admin", user?.id, "oo-admins", ooAdminSearch, ooAdminPage],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
-        params: { role: "OO_ADMIN", page: 0, size: 100 },
+        params: {
+          role: "OO_ADMIN",
+          search: ooAdminSearch || undefined,
+          page: ooAdminPage,
+          size: 9,
+        },
       }),
     enabled: user?.role === "MSU_ADMIN",
   });
@@ -200,13 +212,14 @@ export function MsuAdminDashboard() {
   });
 
   const mentorsQuery = useQuery({
-    queryKey: ["msu-admin", user?.id, "mentors"],
+    queryKey: ["msu-admin", user?.id, "mentors", mentorSearch, mentorPage],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
         params: {
           role: "MENTOR",
-          page: 0,
-          size: 100,
+          search: mentorSearch || undefined,
+          page: mentorPage,
+          size: 9,
         },
       }),
     enabled: user?.role === "MSU_ADMIN",
@@ -933,11 +946,45 @@ export function MsuAdminDashboard() {
 
         {section === "mentor-accounts" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 className="font-semibold text-[#1D3557]">Наставники</h2>
+            <div className="space-y-4">
+              <div>
+                <h2 className="font-semibold text-[#1D3557]">Наставники</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Учётные записи наставников образовательных организаций вашего
+                  МСУ
+                </p>
+              </div>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Учётные записи наставников образовательных организаций вашего МСУ
-            </p>
+              <form
+                className="flex w-full gap-2 sm:max-w-md"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setMentorPage(0);
+                  setMentorSearch(mentorSearchInput.trim());
+                }}
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    size={16}
+                    className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="search"
+                    value={mentorSearchInput}
+                    onChange={(event) =>
+                      setMentorSearchInput(event.target.value)
+                    }
+                    placeholder="Поиск по ФИО или электронной почте"
+                    className={`${inputClass} pl-9`}
+                  />
+                </div>
+
+                <button type="submit" className={secondaryButton}>
+                  <Search size={16} />
+                  Найти
+                </button>
+              </form>
+            </div>
 
             {mentorsQuery.isPending ? (
               <p className="py-10 text-sm text-slate-500">
@@ -945,7 +992,9 @@ export function MsuAdminDashboard() {
               </p>
             ) : mentors.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
-                Наставники не найдены.
+                {mentorSearch
+                  ? "По вашему запросу ничего не найдено."
+                  : "Наставники не найдены."}
               </p>
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -970,16 +1019,84 @@ export function MsuAdminDashboard() {
                 ))}
               </div>
             )}
+
+            {mentorsQuery.data && (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <span>Всего: {mentorsQuery.data.totalElements}</span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className={secondaryButton}
+                    disabled={mentorsQuery.data.first}
+                    onClick={() =>
+                      setMentorPage((page) => Math.max(0, page - 1))
+                    }
+                  >
+                    Назад
+                  </button>
+
+                  <span>
+                    Страница {mentorPage + 1} из{" "}
+                    {Math.max(1, mentorsQuery.data.totalPages)}
+                  </span>
+
+                  <button
+                    type="button"
+                    className={secondaryButton}
+                    disabled={mentorsQuery.data.last}
+                    onClick={() => setMentorPage((page) => page + 1)}
+                  >
+                    Вперёд
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
         {section === "oo-accounts" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <h2 className="font-semibold text-[#1D3557]">Администраторы ОО</h2>
+            <div className="space-y-4">
+              <div>
+                <h2 className="font-semibold text-[#1D3557]">
+                  Администраторы ОО
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Учётные записи образовательных организаций вашего МСУ
+                </p>
+              </div>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Учётные записи образовательных организаций вашего МСУ
-            </p>
+              <form
+                className="flex w-full gap-2 sm:max-w-md"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setOoAdminPage(0);
+                  setOoAdminSearch(ooAdminSearchInput.trim());
+                }}
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    size={16}
+                    className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="search"
+                    value={ooAdminSearchInput}
+                    onChange={(event) =>
+                      setOoAdminSearchInput(event.target.value)
+                    }
+                    placeholder="Поиск по ФИО или электронной почте"
+                    className={`${inputClass} pl-9`}
+                  />
+                </div>
+
+                <button type="submit" className={secondaryButton}>
+                  <Search size={16} />
+                  Найти
+                </button>
+              </form>
+            </div>
 
             {accountsQuery.isPending ? (
               <p className="py-10 text-sm text-slate-500">
@@ -987,7 +1104,9 @@ export function MsuAdminDashboard() {
               </p>
             ) : accounts.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
-                Учётные записи не найдены.
+                {ooAdminSearch
+                  ? "По вашему запросу ничего не найдено."
+                  : "Учётные записи не найдены."}
               </p>
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1010,6 +1129,39 @@ export function MsuAdminDashboard() {
                     }
                   />
                 ))}
+              </div>
+            )}
+
+            {accountsQuery.data && (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <span>Всего: {accountsQuery.data.totalElements}</span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className={secondaryButton}
+                    disabled={accountsQuery.data.first}
+                    onClick={() =>
+                      setOoAdminPage((page) => Math.max(0, page - 1))
+                    }
+                  >
+                    Назад
+                  </button>
+
+                  <span>
+                    Страница {ooAdminPage + 1} из{" "}
+                    {Math.max(1, accountsQuery.data.totalPages)}
+                  </span>
+
+                  <button
+                    type="button"
+                    className={secondaryButton}
+                    disabled={accountsQuery.data.last}
+                    onClick={() => setOoAdminPage((page) => page + 1)}
+                  >
+                    Вперёд
+                  </button>
+                </div>
               </div>
             )}
           </section>
