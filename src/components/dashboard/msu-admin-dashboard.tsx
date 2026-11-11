@@ -132,6 +132,7 @@ export function MsuAdminDashboard() {
   const { section, setSection } = useDashboardShell();
   const [organizationSearch, setOrganizationSearch] = useState("");
   const [organizationPage, setOrganizationPage] = useState(0);
+  const [organizationEditMode, setOrganizationEditMode] = useState(false);
   const [editingOrganizationId, setEditingOrganizationId] = useState<
     number | null
   >(null);
@@ -543,15 +544,7 @@ export function MsuAdminDashboard() {
 
         {section === "organizations" && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold text-[#1D3557]">
-                  Образовательные организации
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Список организаций вашего МСУ
-                </p>
-              </div>
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <form
                 className="flex w-full gap-2 sm:w-auto"
                 onSubmit={(event) => {
@@ -580,6 +573,25 @@ export function MsuAdminDashboard() {
                   Найти
                 </button>
               </form>
+
+              <button
+                type="button"
+                className={secondaryButton}
+                onClick={() => {
+                  if (organizationEditMode) {
+                    setEditingOrganizationId(null);
+                    setEditingOrganizationCode("");
+                    setEditingOrganizationName("");
+                  }
+
+                  setOrganizationEditMode(!organizationEditMode);
+                }}
+              >
+                <Pencil size={16} />
+                {organizationEditMode
+                  ? "Завершить редактирование"
+                  : "Режим редактирования"}
+              </button>
             </div>
 
             {organizationsQuery.isPending ? (
@@ -598,9 +610,11 @@ export function MsuAdminDashboard() {
                       <tr>
                         <th className="px-3 py-3 font-semibold">Код</th>
                         <th className="px-3 py-3 font-semibold">Название</th>
-                        <th className="px-3 py-3 text-right font-semibold">
-                          Действия
-                        </th>
+                        {organizationEditMode && (
+                          <th className="px-3 py-3 text-right font-semibold">
+                            Действия
+                          </th>
+                        )}
                       </tr>
                     </thead>
 
@@ -651,106 +665,108 @@ export function MsuAdminDashboard() {
                               )}
                             </td>
 
-                            <td className="px-3 py-4">
-                              <div className="flex justify-end gap-2">
-                                {isEditing ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      title="Сохранить"
-                                      disabled={
-                                        updateOrganizationMutation.isPending
-                                      }
-                                      onClick={() => {
-                                        const code = Number(
-                                          editingOrganizationCode,
-                                        );
-                                        const name =
-                                          editingOrganizationName.trim();
-
-                                        if (
-                                          !Number.isInteger(code) ||
-                                          code <= 0
-                                        ) {
-                                          toast.error(
-                                            "Код должен быть положительным целым числом.",
+                            {organizationEditMode && (
+                              <td className="px-3 py-4">
+                                <div className="flex justify-end gap-2">
+                                  {isEditing ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        title="Сохранить"
+                                        disabled={
+                                          updateOrganizationMutation.isPending
+                                        }
+                                        onClick={() => {
+                                          const code = Number(
+                                            editingOrganizationCode,
                                           );
-                                          return;
+                                          const name =
+                                            editingOrganizationName.trim();
+
+                                          if (
+                                            !Number.isInteger(code) ||
+                                            code <= 0
+                                          ) {
+                                            toast.error(
+                                              "Код должен быть положительным целым числом.",
+                                            );
+                                            return;
+                                          }
+
+                                          if (!name) {
+                                            toast.error("Укажите название ОО.");
+                                            return;
+                                          }
+
+                                          updateOrganizationMutation.mutate({
+                                            id: organization.id,
+                                            code,
+                                            name,
+                                          });
+                                        }}
+                                        className="rounded-lg border border-emerald-200 p-2 text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+                                      >
+                                        <Save size={17} />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Отменить"
+                                        onClick={() =>
+                                          setEditingOrganizationId(null)
                                         }
-
-                                        if (!name) {
-                                          toast.error("Укажите название ОО.");
-                                          return;
-                                        }
-
-                                        updateOrganizationMutation.mutate({
-                                          id: organization.id,
-                                          code,
-                                          name,
-                                        });
-                                      }}
-                                      className="rounded-lg border border-emerald-200 p-2 text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
-                                    >
-                                      <Save size={17} />
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      title="Отменить"
-                                      onClick={() =>
-                                        setEditingOrganizationId(null)
-                                      }
-                                      className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-                                    >
-                                      <X size={17} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      type="button"
-                                      title="Редактировать"
-                                      onClick={() => {
-                                        setEditingOrganizationId(
-                                          organization.id,
-                                        );
-                                        setEditingOrganizationCode(
-                                          String(organization.code),
-                                        );
-                                        setEditingOrganizationName(
-                                          organization.name,
-                                        );
-                                      }}
-                                      className="rounded-lg border border-slate-200 p-2 text-[#457B9D] transition hover:bg-slate-50"
-                                    >
-                                      <Pencil size={17} />
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      title="Удалить"
-                                      disabled={
-                                        deleteOrganizationMutation.isPending
-                                      }
-                                      onClick={() => {
-                                        if (
-                                          window.confirm(
-                                            `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
-                                          )
-                                        ) {
-                                          deleteOrganizationMutation.mutate(
+                                        className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                                      >
+                                        <X size={17} />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        title="Редактировать"
+                                        onClick={() => {
+                                          setEditingOrganizationId(
                                             organization.id,
                                           );
+                                          setEditingOrganizationCode(
+                                            String(organization.code),
+                                          );
+                                          setEditingOrganizationName(
+                                            organization.name,
+                                          );
+                                        }}
+                                        className="rounded-lg border border-slate-200 p-2 text-[#457B9D] transition hover:bg-slate-50"
+                                      >
+                                        <Pencil size={17} />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        title="Удалить"
+                                        disabled={
+                                          deleteOrganizationMutation.isPending
                                         }
-                                      }}
-                                      className="rounded-lg border border-red-200 p-2 text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                                    >
-                                      <Trash2 size={17} />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
+                                        onClick={() => {
+                                          if (
+                                            window.confirm(
+                                              `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
+                                            )
+                                          ) {
+                                            deleteOrganizationMutation.mutate(
+                                              organization.id,
+                                            );
+                                          }
+                                        }}
+                                        className="rounded-lg border border-red-200 p-2 text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                      >
+                                        <Trash2 size={17} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}

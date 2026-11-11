@@ -24,6 +24,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { MsuAdminDashboard } from "@/components/dashboard/msu-admin-dashboard";
+import { OoAdminDashboard } from "@/components/dashboard/oo-admin-dashboard";
 import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
 
@@ -487,6 +488,10 @@ export default function DashboardPage() {
 
   if (user.role === "MSU_ADMIN") {
     return <MsuAdminDashboard />;
+  }
+
+  if (user.role === "OO_ADMIN") {
+    return <OoAdminDashboard />;
   }
 
   if (!isRegionAdmin) {

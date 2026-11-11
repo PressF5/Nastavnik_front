@@ -63,6 +63,24 @@ const msuNavigation: {
   },
 ];
 
+const ooNavigation: {
+  id: DashboardSection;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  { id: "overview", label: "Обзор", icon: LayoutDashboard },
+  {
+    id: "mentee-requests",
+    label: "Заявки наставляемых",
+    icon: ClipboardCheck,
+  },
+  {
+    id: "mentees",
+    label: "Наставляемые",
+    icon: Users,
+  },
+];
+
 const profileFieldsNavigation = {
   label: "Конструктор анкет",
   icon: SlidersHorizontal,
@@ -76,7 +94,11 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const navigation =
-    user?.role === "MSU_ADMIN" ? msuNavigation : regionNavigation;
+    user?.role === "MSU_ADMIN"
+      ? msuNavigation
+      : user?.role === "OO_ADMIN"
+        ? ooNavigation
+        : regionNavigation;
 
   const {
     section,
@@ -138,7 +160,9 @@ export function DashboardSidebar({
               <p className="mt-1 text-sm font-semibold text-[#1D3557]">
                 {user?.role === "MSU_ADMIN"
                   ? "Управление МСУ"
-                  : "Управление регионом"}
+                  : user?.role === "OO_ADMIN"
+                    ? "Управление ОО"
+                    : "Управление регионом"}
               </p>
             </div>
           )}
