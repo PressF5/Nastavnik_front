@@ -617,18 +617,13 @@ export function MsuAdminDashboard() {
             ) : (
               <>
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <colgroup>
-                      <col className="w-32" />
-                      <col />
-                      {organizationEditMode && <col className="w-64" />}
-                    </colgroup>
+                  <table className="w-full table-auto text-left text-sm">
                     <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-3 font-semibold">Код</th>
                         <th className="px-3 py-3 font-semibold">Название</th>
                         {organizationEditMode && (
-                          <th className="px-3 py-3 text-right font-semibold">
+                          <th className="w-[1%] whitespace-nowrap px-3 py-3 text-right font-semibold">
                             Действия
                           </th>
                         )}
@@ -683,7 +678,7 @@ export function MsuAdminDashboard() {
                             </td>
 
                             {organizationEditMode && (
-                              <td className="px-3 py-4">
+                              <td className="whitespace-nowrap px-3 py-4">
                                 <div className="flex flex-nowrap justify-end gap-2">
                                   {isEditing ? (
                                     <>
