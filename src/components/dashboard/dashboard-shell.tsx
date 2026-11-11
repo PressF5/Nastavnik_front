@@ -18,8 +18,10 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const user = useAuthStore((state) => state.user);
 
-  const { collapsed, setCollapsed, setMobileOpen } = useDashboardShell();
+  const { section, setSection, collapsed, setCollapsed, setMobileOpen } =
+    useDashboardShell();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -29,6 +31,12 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setSection("overview");
+    }
+  }, [user?.id, user?.role, setSection]);
 
   useEffect(() => {
     setMobileOpen(false);
