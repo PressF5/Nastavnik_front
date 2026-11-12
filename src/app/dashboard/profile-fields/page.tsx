@@ -1242,12 +1242,18 @@ function ProfileMatchingRuleEditor({
         {rule && (
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              rule.active
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-slate-200 text-slate-600"
+              !rule.active
+                ? "bg-slate-200 text-slate-600"
+                : canUseMatching
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
             }`}
           >
-            {rule.active ? "Активно" : "Неактивно"}
+            {!rule.active
+              ? "Неактивно"
+              : canUseMatching
+                ? "Участвует в подборе"
+                : "Временно не участвует"}
           </span>
         )}
       </div>
@@ -1261,8 +1267,9 @@ function ProfileMatchingRuleEditor({
 
       {rule && !canUseMatching && rule.active && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Поле больше не соответствует условиям участия в подборе. Деактивируй
-          правило или восстанови настройки поля.
+          Поле временно не участвует в расчёте совместимости. Правило и его
+          настройки сохранены. После активации поля и восстановления его участия
+          в подборе оно автоматически вернётся в расчёт.
         </p>
       )}
 
