@@ -21,6 +21,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import {
   OrganizationHierarchyCard,
   type OrganizationContext,
@@ -370,29 +371,24 @@ export function MsuAdminDashboard() {
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#1D3557]">
-              Кабинет администратора МСУ
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Управление образовательными организациями и заявками
-              администраторов ОО.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void invalidateDashboard()}
-            disabled={isRefreshing}
-            className={secondaryButton}
-          >
-            <RefreshCw
-              size={16}
-              className={isRefreshing ? "animate-spin" : ""}
-            />
-            Обновить
-          </button>
-        </div>
+        <DashboardPageHeader
+          title="Кабинет администратора МСУ"
+          description="Управление образовательными организациями и заявками администраторов ОО."
+          action={
+            <button
+              type="button"
+              onClick={() => void invalidateDashboard()}
+              disabled={isRefreshing}
+              className={secondaryButton}
+            >
+              <RefreshCw
+                size={16}
+                className={isRefreshing ? "animate-spin" : ""}
+              />
+              Обновить
+            </button>
+          }
+        />
 
         {hasError && (
           <div

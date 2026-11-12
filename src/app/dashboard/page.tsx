@@ -29,6 +29,7 @@ import { UserAccountCard } from "@/components/dashboard/user-account-card";
 import { UserRequestCard } from "@/components/dashboard/user-request-card";
 import { OrganizationHierarchyCard } from "@/components/dashboard/organization-hierarchy-card";
 import type { OrganizationContext } from "@/components/dashboard/organization-hierarchy-card";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 
 type Msu = {
   id: number;
@@ -556,20 +557,25 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => void refreshDashboard()}
-            disabled={isRefreshing}
-            className={buttonSecondary}
-          >
-            <RefreshCw
-              size={16}
-              className={isRefreshing ? "animate-spin" : ""}
-            />
-            Обновить
-          </button>
-        </div>
+        <DashboardPageHeader
+          title="Кабинет администратора региона"
+          description="Управление муниципальными управлениями, образовательными организациями и учётными записями."
+          action={
+            <button
+              type="button"
+              onClick={() => void refreshDashboard()}
+              disabled={isRefreshing}
+              className={buttonSecondary}
+            >
+              <RefreshCw
+                size={16}
+                className={isRefreshing ? "animate-spin" : ""}
+              />
+              Обновить
+            </button>
+          }
+        />
+
         {(msusQuery.isError ||
           organizationsQuery.isError ||
           pendingQuery.isError ||
