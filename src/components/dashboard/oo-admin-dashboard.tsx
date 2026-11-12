@@ -22,6 +22,8 @@ import {
   type OrganizationContext,
 } from "@/components/dashboard/organization-hierarchy-card";
 
+import { useState } from "react";
+
 type AdminUser = {
   id: number;
   email: string;
@@ -51,6 +53,8 @@ const primaryButton =
 
 const secondaryButton =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+
+const PAGE_SIZE = 9;
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError || error instanceof Error) {
@@ -95,28 +99,44 @@ export function OoAdminDashboard() {
   const user = useAuthStore((state) => state.user);
   const { section, setSection } = useDashboardShell();
 
+  const [requestSearchInput, setRequestSearchInput] = useState("");
+  const [requestSearch, setRequestSearch] = useState("");
+  const [requestPage, setRequestPage] = useState(0);
+
+  const [menteeSearchInput, setMenteeSearchInput] = useState("");
+  const [menteeSearch, setMenteeSearch] = useState("");
+  const [menteePage, setMenteePage] = useState(0);
+
   const pendingMenteesQuery = useQuery({
-    queryKey: ["oo-admin", user?.id, "pending-mentees"],
+    queryKey: [
+      "oo-admin",
+      user?.id,
+      "pending-mentees",
+      requestSearch,
+      requestPage,
+    ],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
         params: {
           role: "MENTEE",
           status: "PENDING",
-          page: 0,
-          size: 100,
+          search: requestSearch || undefined,
+          page: requestPage,
+          size: PAGE_SIZE,
         },
       }),
     enabled: user?.role === "OO_ADMIN",
   });
 
   const menteesQuery = useQuery({
-    queryKey: ["oo-admin", user?.id, "mentees"],
+    queryKey: ["oo-admin", user?.id, "mentees", menteeSearch, menteePage],
     queryFn: () =>
       apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
         params: {
           role: "MENTEE",
-          page: 0,
-          size: 100,
+          search: menteeSearch || undefined,
+          page: menteePage,
+          size: PAGE_SIZE,
         },
       }),
     enabled: user?.role === "OO_ADMIN",
@@ -126,6 +146,20 @@ export function OoAdminDashboard() {
     queryKey: ["organization-context", user?.id],
     queryFn: () =>
       apiFetch<OrganizationContext>("/api/organization-context/current"),
+    enabled: user?.role === "OO_ADMIN",
+  });
+
+  const acceptedMenteesQuery = useQuery({
+    queryKey: ["oo-admin", user?.id, "accepted-mentees-count"],
+    queryFn: () =>
+      apiFetch<SpringPage<AdminUser>>("/api/admin/users", {
+        params: {
+          role: "MENTEE",
+          status: "ACCEPTED",
+          page: 0,
+          size: 1,
+        },
+      }),
     enabled: user?.role === "OO_ADMIN",
   });
 
@@ -195,14 +229,15 @@ export function OoAdminDashboard() {
   const pendingMentees = pendingMenteesQuery.data?.content ?? [];
   const mentees = menteesQuery.data?.content ?? [];
 
-  const acceptedMentees = mentees.filter(
-    (mentee) => mentee.accountStatus === "ACCEPTED",
-  );
-
   const isRefreshing =
-    pendingMenteesQuery.isFetching || menteesQuery.isFetching;
+    pendingMenteesQuery.isFetching ||
+    menteesQuery.isFetching ||
+    acceptedMenteesQuery.isFetching;
 
-  const hasError = pendingMenteesQuery.isError || menteesQuery.isError;
+  const hasError =
+    pendingMenteesQuery.isError ||
+    menteesQuery.isError ||
+    acceptedMenteesQuery.isError;
 
   return (
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
@@ -267,7 +302,11 @@ export function OoAdminDashboard() {
 
               <StatCard
                 title="Подтверждённые"
-                value={menteesQuery.isPending ? "—" : acceptedMentees.length}
+                value={
+                  acceptedMenteesQuery.isPending
+                    ? "—"
+                    : (acceptedMenteesQuery.data?.totalElements ?? 0)
+                }
                 description="Наставляемые с подтверждённой учётной записью"
                 icon={<UserRound size={21} />}
               />
@@ -355,6 +394,39 @@ export function OoAdminDashboard() {
               Подтверждение или отклонение регистрации
             </p>
 
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setRequestPage(0);
+                setRequestSearch(requestSearchInput.trim());
+              }}
+              className="mt-5 flex flex-col gap-3 sm:flex-row"
+            >
+              <input
+                type="search"
+                value={requestSearchInput}
+                onChange={(event) => setRequestSearchInput(event.target.value)}
+                placeholder="Поиск по ФИО или электронной почте"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              />
+
+              <button type="submit" className={primaryButton}>
+                Найти
+              </button>
+
+              <button
+                type="button"
+                className={secondaryButton}
+                onClick={() => {
+                  setRequestSearchInput("");
+                  setRequestSearch("");
+                  setRequestPage(0);
+                }}
+              >
+                Сбросить
+              </button>
+            </form>
+
             {pendingMenteesQuery.isPending ? (
               <p className="py-10 text-sm text-slate-500">
                 Загружаем заявки...
@@ -395,6 +467,41 @@ export function OoAdminDashboard() {
                 ))}
               </div>
             )}
+            {pendingMenteesQuery.data &&
+              pendingMenteesQuery.data.totalPages > 0 && (
+                <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-5 sm:flex-row">
+                  <p className="text-sm text-slate-500">
+                    Всего заявок: {pendingMenteesQuery.data.totalElements}
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={pendingMenteesQuery.data.first}
+                      onClick={() =>
+                        setRequestPage((page) => Math.max(0, page - 1))
+                      }
+                      className={secondaryButton}
+                    >
+                      Назад
+                    </button>
+
+                    <span className="text-sm text-slate-600">
+                      Страница {pendingMenteesQuery.data.number + 1} из{" "}
+                      {pendingMenteesQuery.data.totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={pendingMenteesQuery.data.last}
+                      onClick={() => setRequestPage((page) => page + 1)}
+                      className={secondaryButton}
+                    >
+                      Далее
+                    </button>
+                  </div>
+                </div>
+              )}
           </section>
         )}
 
@@ -405,6 +512,39 @@ export function OoAdminDashboard() {
             <p className="mt-1 text-sm text-slate-500">
               Учётные записи наставляемых вашей образовательной организации
             </p>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setMenteePage(0);
+                setMenteeSearch(menteeSearchInput.trim());
+              }}
+              className="mt-5 flex flex-col gap-3 sm:flex-row"
+            >
+              <input
+                type="search"
+                value={menteeSearchInput}
+                onChange={(event) => setMenteeSearchInput(event.target.value)}
+                placeholder="Поиск по ФИО или электронной почте"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              />
+
+              <button type="submit" className={primaryButton}>
+                Найти
+              </button>
+
+              <button
+                type="button"
+                className={secondaryButton}
+                onClick={() => {
+                  setMenteeSearchInput("");
+                  setMenteeSearch("");
+                  setMenteePage(0);
+                }}
+              >
+                Сбросить
+              </button>
+            </form>
 
             {menteesQuery.isPending ? (
               <p className="py-10 text-sm text-slate-500">
@@ -438,6 +578,40 @@ export function OoAdminDashboard() {
                     }
                   />
                 ))}
+              </div>
+            )}
+            {menteesQuery.data && menteesQuery.data.totalPages > 0 && (
+              <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-5 sm:flex-row">
+                <p className="text-sm text-slate-500">
+                  Всего наставляемых: {menteesQuery.data.totalElements}
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={menteesQuery.data.first}
+                    onClick={() =>
+                      setMenteePage((page) => Math.max(0, page - 1))
+                    }
+                    className={secondaryButton}
+                  >
+                    Назад
+                  </button>
+
+                  <span className="text-sm text-slate-600">
+                    Страница {menteesQuery.data.number + 1} из{" "}
+                    {menteesQuery.data.totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={menteesQuery.data.last}
+                    onClick={() => setMenteePage((page) => page + 1)}
+                    className={secondaryButton}
+                  >
+                    Далее
+                  </button>
+                </div>
               </div>
             )}
           </section>
