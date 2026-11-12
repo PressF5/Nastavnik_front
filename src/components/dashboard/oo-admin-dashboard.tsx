@@ -48,6 +48,31 @@ type SpringPage<T> = {
   empty: boolean;
 };
 
+type AvailableMentee = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  birthDate: string | null;
+};
+
+type MentorCandidate = {
+  mentorId: number;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  educationalOrganizationName: string | null;
+  compatibilityPercentage: number;
+  comparableFieldCount: number;
+};
+
+type CreatedMentorship = {
+  id: number;
+  mentorId: number;
+  menteeId: number;
+  status: "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED";
+};
+
 const primaryButton =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f] disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -106,6 +131,7 @@ export function OoAdminDashboard() {
   const [menteeSearchInput, setMenteeSearchInput] = useState("");
   const [menteeSearch, setMenteeSearch] = useState("");
   const [menteePage, setMenteePage] = useState(0);
+  const [selectedMenteeId, setSelectedMenteeId] = useState("");
 
   const pendingMenteesQuery = useQuery({
     queryKey: [
@@ -163,6 +189,24 @@ export function OoAdminDashboard() {
     enabled: user?.role === "OO_ADMIN",
   });
 
+  const availableMenteesQuery = useQuery({
+    queryKey: ["oo-admin", user?.id, "available-mentees"],
+    queryFn: () => apiFetch<AvailableMentee[]>("/api/admin/mentees/available"),
+    enabled: user?.role === "OO_ADMIN" && section === "mentor-assignment",
+  });
+
+  const mentorCandidatesQuery = useQuery({
+    queryKey: ["oo-admin", user?.id, "mentor-candidates", selectedMenteeId],
+    queryFn: () =>
+      apiFetch<MentorCandidate[]>(
+        `/api/admin/mentees/${selectedMenteeId}/mentors`,
+      ),
+    enabled:
+      user?.role === "OO_ADMIN" &&
+      section === "mentor-assignment" &&
+      selectedMenteeId !== "",
+  });
+
   const invalidateDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -170,6 +214,9 @@ export function OoAdminDashboard() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["oo-admin", user?.id, "mentees"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["oo-admin", user?.id, "accepted-mentees-count"],
       }),
     ]);
   };
@@ -226,17 +273,54 @@ export function OoAdminDashboard() {
     },
   });
 
+  const createMentorshipMutation = useMutation({
+    mutationFn: (mentorId: number) =>
+      apiFetch<CreatedMentorship>("/api/admin/mentorship-assignments", {
+        method: "POST",
+        body: JSON.stringify({
+          menteeId: Number(selectedMenteeId),
+          mentorId,
+        }),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Заявка на назначение наставника отправлена.");
+
+      setSelectedMenteeId("");
+
+      await Promise.all([
+        invalidateDashboard(),
+        queryClient.invalidateQueries({
+          queryKey: ["oo-admin", user?.id, "available-mentees"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["oo-admin", user?.id, "mentor-candidates"],
+        }),
+      ]);
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось назначить наставника", {
+        description: errorMessage(error),
+      });
+    },
+  });
+
   const pendingMentees = pendingMenteesQuery.data?.content ?? [];
   const mentees = menteesQuery.data?.content ?? [];
 
   const isRefreshing =
     pendingMenteesQuery.isFetching ||
     menteesQuery.isFetching ||
+    availableMenteesQuery.isFetching ||
+    mentorCandidatesQuery.isFetching ||
     acceptedMenteesQuery.isFetching;
 
   const hasError =
     pendingMenteesQuery.isError ||
     menteesQuery.isError ||
+    availableMenteesQuery.isError ||
+    mentorCandidatesQuery.isError ||
     acceptedMenteesQuery.isError;
 
   return (
@@ -612,6 +696,170 @@ export function OoAdminDashboard() {
                     Далее
                   </button>
                 </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {section === "mentor-assignment" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div>
+              <h2 className="font-semibold text-[#1D3557]">
+                Назначение наставника
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Выберите наставляемого, чтобы посмотреть подходящих наставников
+                и отправить заявку на назначение.
+              </p>
+            </div>
+
+            <div className="mt-6 max-w-2xl">
+              <label
+                htmlFor="available-mentee"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Наставляемый
+              </label>
+
+              <select
+                id="available-mentee"
+                value={selectedMenteeId}
+                onChange={(event) => setSelectedMenteeId(event.target.value)}
+                disabled={
+                  availableMenteesQuery.isPending ||
+                  availableMenteesQuery.isError ||
+                  availableMenteesQuery.data?.length === 0
+                }
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20 disabled:cursor-not-allowed disabled:bg-slate-50"
+              >
+                <option value="">
+                  {availableMenteesQuery.isPending
+                    ? "Загружаем наставляемых..."
+                    : "Выберите наставляемого"}
+                </option>
+
+                {availableMenteesQuery.data?.map((mentee) => (
+                  <option key={mentee.id} value={mentee.id}>
+                    {[mentee.lastName, mentee.firstName, mentee.middleName]
+                      .filter(Boolean)
+                      .join(" ")}
+                  </option>
+                ))}
+              </select>
+
+              {availableMenteesQuery.isError && (
+                <p className="mt-2 text-sm text-red-600">
+                  Не удалось загрузить список наставляемых.
+                </p>
+              )}
+
+              {availableMenteesQuery.data?.length === 0 && (
+                <p className="mt-2 text-sm text-slate-500">
+                  Сейчас нет наставляемых, которым можно назначить наставника.
+                </p>
+              )}
+            </div>
+
+            {selectedMenteeId && (
+              <div className="mt-8 border-t border-slate-100 pt-6">
+                <h3 className="font-semibold text-[#1D3557]">
+                  Подходящие наставники
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Показаны наставники вашего МСУ с совместимостью выше 50%.
+                </p>
+
+                {mentorCandidatesQuery.isPending ? (
+                  <p className="py-10 text-sm text-slate-500">
+                    Подбираем наставников...
+                  </p>
+                ) : mentorCandidatesQuery.isError ? (
+                  <div
+                    role="alert"
+                    className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                  >
+                    Не удалось выполнить подбор наставников.
+                  </div>
+                ) : mentorCandidatesQuery.data?.length === 0 ? (
+                  <p className="py-10 text-sm text-slate-500">
+                    Подходящих наставников не найдено. Проверьте заполнение
+                    анкет и правила совместимости.
+                  </p>
+                ) : (
+                  <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {mentorCandidatesQuery.data?.map((mentor) => (
+                      <article
+                        key={mentor.mentorId}
+                        className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                      >
+                        <div>
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <h4 className="font-semibold text-[#1D3557]">
+                                {[
+                                  mentor.lastName,
+                                  mentor.firstName,
+                                  mentor.middleName,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                              </h4>
+
+                              <p className="mt-1 text-sm text-slate-500">
+                                Наставник
+                              </p>
+                            </div>
+
+                            <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right">
+                              <p className="text-xs text-emerald-700">
+                                Совместимость
+                              </p>
+
+                              <p className="text-xl font-semibold text-emerald-800">
+                                {mentor.compatibilityPercentage.toLocaleString(
+                                  "ru-RU",
+                                  { maximumFractionDigits: 1 },
+                                )}
+                                %
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-5 border-t border-slate-100 pt-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              Образовательная организация
+                            </p>
+
+                            <p className="mt-1 text-sm font-medium text-slate-700">
+                              {mentor.educationalOrganizationName ??
+                                "Не указана"}
+                            </p>
+
+                            <p className="mt-3 text-xs text-slate-500">
+                              Сопоставлено полей анкеты:{" "}
+                              {mentor.comparableFieldCount}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={createMentorshipMutation.isPending}
+                          onClick={() =>
+                            createMentorshipMutation.mutate(mentor.mentorId)
+                          }
+                          className={`${primaryButton} mt-5 w-full`}
+                        >
+                          {createMentorshipMutation.isPending
+                            ? "Отправляем заявку..."
+                            : "Отправить заявку"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </section>
