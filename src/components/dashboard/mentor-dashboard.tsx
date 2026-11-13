@@ -552,7 +552,7 @@ export function MentorDashboard() {
           </section>
         )}
 
-        {selectedMenteeId !== null && (
+        {section === "mentees" && selectedMenteeId !== null && (
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -704,74 +704,6 @@ export function MentorDashboard() {
               </div>
             )}
           </section>
-        )}
-
-        {endingMentorshipId !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-            <section className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-              <h2 className="text-lg font-semibold text-[#1D3557]">
-                Завершение наставничества
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Укажи причину завершения наставничества. После подтверждения
-                назначение перейдёт в статус «Завершено».
-              </p>
-
-              <label
-                htmlFor="mentorship-end-reason"
-                className="mt-5 block text-sm font-medium text-slate-700"
-              >
-                Причина завершения
-              </label>
-
-              <textarea
-                id="mentorship-end-reason"
-                value={endReason}
-                onChange={(event) => setEndReason(event.target.value)}
-                maxLength={2000}
-                rows={4}
-                placeholder="Укажи причину завершения наставничества..."
-                className="mt-2 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
-              />
-
-              <p className="mt-1 text-right text-xs text-slate-400">
-                {endReason.length} / 2000
-              </p>
-
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={endMentorshipMutation.isPending}
-                  onClick={() => {
-                    setEndingMentorshipId(null);
-                    setEndReason("");
-                  }}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                >
-                  Отмена
-                </button>
-
-                <button
-                  type="button"
-                  disabled={
-                    endMentorshipMutation.isPending || !endReason.trim()
-                  }
-                  onClick={() => {
-                    endMentorshipMutation.mutate({
-                      id: endingMentorshipId,
-                      reason: endReason.trim(),
-                    });
-                  }}
-                  className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {endMentorshipMutation.isPending
-                    ? "Завершение..."
-                    : "Подтвердить завершение"}
-                </button>
-              </div>
-            </section>
-          </div>
         )}
 
         {endingMentorshipId !== null && (
