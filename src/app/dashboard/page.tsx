@@ -29,6 +29,7 @@ import { OrganizationHierarchyCard } from "@/components/dashboard/organization-h
 import type { OrganizationContext } from "@/components/dashboard/organization-hierarchy-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { MenteeDashboard } from "@/components/dashboard/mentee-dashboard";
+import { MentorDashboard } from "@/components/dashboard/mentor-dashboard";
 
 type Msu = {
   id: number;
@@ -503,10 +504,12 @@ export default function DashboardPage() {
     return <OoAdminDashboard />;
   }
 
-  
-
   if (user.role === "MENTEE") {
     return <MenteeDashboard />;
+  }
+
+  if (user.role === "MENTOR") {
+    return <MentorDashboard />;
   }
 
   if (!isRegionAdmin) {
