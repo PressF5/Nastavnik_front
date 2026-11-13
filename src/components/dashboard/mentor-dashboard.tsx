@@ -635,30 +635,6 @@ export function MentorDashboard() {
                           </div>
 
                           <div>
-                            <p className="text-xs text-slate-500">Регион</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.regionName ?? "Не указан"}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs text-slate-500">МСУ</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.msuName ?? "Не указано"}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs text-slate-500">
-                              Образовательная организация
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.educationalOrganizationName ??
-                                "Не указана"}
-                            </p>
-                          </div>
-
-                          <div>
                             <p className="text-xs text-slate-500">
                               Учебный год
                             </p>
@@ -675,6 +651,42 @@ export function MentorDashboard() {
                               {profile.mentorship.startedAt
                                 ? formatDate(profile.mentorship.startedAt)
                                 : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-200 pt-5">
+                        <h3 className="font-semibold text-[#1D3557]">
+                          Организационная принадлежность
+                        </h3>
+
+                        <div className="mt-4 grid gap-3 md:grid-cols-3">
+                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              Регион
+                            </p>
+                            <p className="mt-2 font-semibold text-[#1D3557]">
+                              {profile.regionName ?? "Не указан"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              Муниципальное образование
+                            </p>
+                            <p className="mt-2 font-semibold text-[#1D3557]">
+                              {profile.msuName ?? "Не указано"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              Образовательная организация
+                            </p>
+                            <p className="mt-2 font-semibold text-[#1D3557]">
+                              {profile.educationalOrganizationName ??
+                                "Не указана"}
                             </p>
                           </div>
                         </div>
