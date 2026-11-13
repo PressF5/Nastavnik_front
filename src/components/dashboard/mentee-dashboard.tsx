@@ -20,6 +20,7 @@ import {
 } from "@/components/dashboard/organization-hierarchy-card";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { useState } from "react";
+import { ProfileCompletionSection } from "@/components/dashboard/profile-completion-section";
 
 type ProfileFieldType =
   | "TEXT"
@@ -319,67 +320,17 @@ export function MenteeDashboard() {
               isError={organizationContextQuery.isError}
             />
 
-            <section>
-              <h2 className="mb-4 text-lg font-semibold text-[#1D3557]">
-                Мой профиль
-              </h2>
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <StatCard
-                  title="Полей в анкете"
-                  value={profileQuery.isPending ? "—" : fields.length}
-                  description="Активные поля анкеты, настроенные администратором региона."
-                  icon={<ClipboardList size={21} />}
-                />
-
-                <StatCard
-                  title="Обязательные поля"
-                  value={
-                    profileQuery.isPending
-                      ? "—"
-                      : `${completedRequiredFields} / ${requiredFields.length}`
-                  }
-                  description="Количество обязательных полей, которые уже заполнены."
-                  icon={<CheckCircle2 size={21} />}
-                />
-
-                <StatCard
-                  title="Заполненность анкеты"
-                  value={
-                    profileQuery.isPending
-                      ? "—"
-                      : `${completedFields} / ${fields.length}`
-                  }
-                  description="Все заполненные поля анкеты."
-                  icon={<UserRound size={21} />}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-              <h2 className="font-semibold text-[#1D3557]">Состояние анкеты</h2>
-
-              <p className="mt-2 text-sm text-slate-600">{profileStatus}</p>
-
-              {profileQuery.isError && (
-                <button
-                  type="button"
-                  onClick={() => void profileQuery.refetch()}
-                  className="mt-3 text-sm font-medium text-[#457B9D] hover:underline"
-                >
-                  Повторить загрузку
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/profile")}
-                className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                <ClipboardList size={17} />
-                Перейти к заполнению анкеты
-              </button>
-            </section>
+            <ProfileCompletionSection
+              totalFields={fields.length}
+              completedFields={completedFields}
+              requiredFields={requiredFields.length}
+              completedRequiredFields={completedRequiredFields}
+              status={profileStatus}
+              isLoading={profileQuery.isPending}
+              isError={profileQuery.isError}
+              onRetry={() => void profileQuery.refetch()}
+              onOpenProfile={() => router.push("/dashboard/profile")}
+            />
           </>
         )}
         {section === "mentorship" && (

@@ -19,6 +19,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
+import { ProfileCompletionSection } from "@/components/dashboard/profile-completion-section";
 
 type MentorshipStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED";
 
@@ -361,6 +362,10 @@ export function MentorDashboard() {
     requiredProfileFields.filter(hasProfileValue).length;
 
   const completedProfileFields = profileFields.filter(hasProfileValue).length;
+  const profileCompletionPercent =
+    profileFields.length === 0
+      ? 0
+      : Math.round((completedProfileFields / profileFields.length) * 100);
 
   const profileStatus = profileQuery.isPending
     ? "Загружаем анкету"
@@ -432,79 +437,17 @@ export function MentorDashboard() {
         )}
 
         {section === "overview" && (
-          <section className="space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-[#1D3557]">
-                Мой профиль
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Заполнение профильной анкеты наставника.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <StatCard
-                title="Полей в анкете"
-                value={profileQuery.isPending ? "—" : profileFields.length}
-                description="Активные поля анкеты, настроенные администратором региона."
-                icon={<ClipboardList size={21} />}
-              />
-
-              <StatCard
-                title="Обязательные поля"
-                value={
-                  profileQuery.isPending
-                    ? "—"
-                    : `${completedRequiredProfileFields} / ${requiredProfileFields.length}`
-                }
-                description="Количество обязательных полей, которые уже заполнены."
-                icon={<CheckCircle2 size={21} />}
-              />
-
-              <StatCard
-                title="Заполненность анкеты"
-                value={
-                  profileQuery.isPending
-                    ? "—"
-                    : `${completedProfileFields} / ${profileFields.length}`
-                }
-                description="Количество заполненных полей анкеты."
-                icon={<UserRound size={21} />}
-              />
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-              <h3 className="font-semibold text-[#1D3557]">Состояние анкеты</h3>
-
-              <p className="mt-2 text-sm text-slate-600">{profileStatus}</p>
-
-              {profileQuery.isError && (
-                <button
-                  type="button"
-                  onClick={() => void profileQuery.refetch()}
-                  className="mt-3 text-sm font-medium text-[#457B9D] hover:underline"
-                >
-                  Повторить загрузку
-                </button>
-              )}
-
-              {profileQuery.isSuccess && profileFields.length === 0 && (
-                <p className="mt-3 text-sm text-slate-500">
-                  Для вашей роли пока не настроены поля анкеты.
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/profile")}
-                className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                <ClipboardList size={17} />
-                Перейти к заполнению анкеты
-              </button>
-            </div>
-          </section>
+          <ProfileCompletionSection
+            totalFields={profileFields.length}
+            completedFields={completedProfileFields}
+            requiredFields={requiredProfileFields.length}
+            completedRequiredFields={completedRequiredProfileFields}
+            status={profileStatus}
+            isLoading={profileQuery.isPending}
+            isError={profileQuery.isError}
+            onRetry={() => void profileQuery.refetch()}
+            onOpenProfile={() => router.push("/dashboard/profile")}
+          />
         )}
 
         {hasError && (
