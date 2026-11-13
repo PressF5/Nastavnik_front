@@ -476,34 +476,61 @@ export function MentorDashboard() {
                 {mentees.map((item) => (
                   <article
                     key={item.id}
-                    className="rounded-xl border border-slate-200 p-5"
+                    className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
                   >
-                    <h3 className="font-semibold text-[#1D3557]">
-                      {fullName(item)}
-                    </h3>
+                    <div>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Наставляемый №{item.menteeId}
+                          </p>
 
-                    <p className="mt-1 text-sm text-slate-500">
-                      {item.menteeEducationalOrganizationName ??
-                        "ОО не указана"}
-                    </p>
+                          <h3 className="mt-2 font-semibold leading-6 text-[#1D3557]">
+                            {fullName(item)}
+                          </h3>
+                        </div>
 
-                    <p className="mt-3 text-sm text-slate-600">
-                      Учебный год: {item.academicYearName}
-                    </p>
+                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                          Наставничество действует
+                        </span>
+                      </div>
 
-                    <p className="mt-1 text-sm text-slate-600">
-                      Начало наставничества:{" "}
-                      {item.startedAt ? formatDate(item.startedAt) : "—"}
-                    </p>
+                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Образовательная организация
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {item.menteeEducationalOrganizationName ??
+                              "Не указана"}
+                          </p>
+                        </div>
 
-                    <p className="mt-3 text-sm font-medium text-emerald-700">
-                      Наставничество действует
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-2">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Учебный год
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {item.academicYearName}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Начало наставничества
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {item.startedAt ? formatDate(item.startedAt) : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
                       <button
                         type="button"
                         onClick={() => setSelectedMenteeId(item.menteeId)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#27476f]"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f]"
                       >
                         <UserRound size={16} />
                         Посмотреть анкету
@@ -515,7 +542,7 @@ export function MentorDashboard() {
                           setEndingMentorshipId(item.id);
                           setEndReason("");
                         }}
-                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50"
                       >
                         <X size={16} />
                         Завершить наставничество
