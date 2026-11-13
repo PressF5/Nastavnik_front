@@ -289,29 +289,30 @@ export function MentorDashboard() {
           }
         />
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <StatCard
-            title="Новые предложения"
-            value={isLoading ? "—" : requests.length}
-            description="Предложения, ожидающие вашего решения."
-            icon={<ClipboardCheck size={21} />}
-          />
+        {section === "overview" && (
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard
+              title="Новые предложения"
+              value={isLoading ? "—" : requests.length}
+              description="Предложения, ожидающие вашего решения."
+              icon={<ClipboardCheck size={21} />}
+            />
 
-          <StatCard
-            title="Действующие наставляемые"
-            value={isLoading ? "—" : mentees.length}
-            description="Наставляемые, с которыми уже начата работа."
-            icon={<Users size={21} />}
-          />
+            <StatCard
+              title="Действующие наставляемые"
+              value={isLoading ? "—" : mentees.length}
+              description="Наставляемые, с которыми уже начата работа."
+              icon={<Users size={21} />}
+            />
 
-          <StatCard
-            title="Свободные места"
-            value={isLoading ? "—" : Math.max(0, 3 - mentees.length)}
-            description="Количество оставшихся мест из трёх возможных."
-            icon={<UserRound size={21} />}
-          />
-        </section>
-
+            <StatCard
+              title="Свободные места"
+              value={isLoading ? "—" : Math.max(0, 3 - mentees.length)}
+              description="Количество оставшихся мест из трёх возможных."
+              icon={<UserRound size={21} />}
+            />
+          </section>
+        )}
         <section className="flex flex-wrap gap-2">
           <button
             type="button"
