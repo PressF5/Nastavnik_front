@@ -4,7 +4,6 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
-  Check,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -15,7 +14,6 @@ import {
   Search,
   Trash2,
   Users,
-  X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,6 +28,7 @@ import { UserRequestCard } from "@/components/dashboard/user-request-card";
 import { OrganizationHierarchyCard } from "@/components/dashboard/organization-hierarchy-card";
 import type { OrganizationContext } from "@/components/dashboard/organization-hierarchy-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
+import { MenteeDashboard } from "@/components/dashboard/mentee-dashboard";
 
 type Msu = {
   id: number;
@@ -502,6 +501,12 @@ export default function DashboardPage() {
 
   if (user.role === "OO_ADMIN") {
     return <OoAdminDashboard />;
+  }
+
+  
+
+  if (user.role === "MENTEE") {
+    return <MenteeDashboard />;
   }
 
   if (!isRegionAdmin) {

@@ -38,6 +38,18 @@ const regionNavigation: {
   { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },
 ];
 
+const profileRoleNavigation: {
+  id: DashboardSection;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  {
+    id: "overview",
+    label: "Обзор",
+    icon: LayoutDashboard,
+  },
+];
+
 const msuNavigation: {
   id: DashboardSection;
   label: string;
@@ -108,7 +120,9 @@ export function DashboardSidebar({
       ? msuNavigation
       : user?.role === "OO_ADMIN"
         ? ooNavigation
-        : regionNavigation;
+        : user?.role === "MENTOR" || user?.role === "MENTEE"
+          ? profileRoleNavigation
+          : regionNavigation;
 
   const {
     section,
@@ -172,7 +186,11 @@ export function DashboardSidebar({
                   ? "Управление МСУ"
                   : user?.role === "OO_ADMIN"
                     ? "Управление ОО"
-                    : "Управление регионом"}
+                    : user?.role === "MENTOR"
+                      ? "Кабинет наставника"
+                      : user?.role === "MENTEE"
+                        ? "Кабинет наставляемого"
+                        : "Управление регионом"}
               </p>
             </div>
           )}
