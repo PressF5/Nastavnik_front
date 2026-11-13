@@ -172,7 +172,7 @@ export function MenteeDashboard() {
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
-              title="Всего полей"
+              title="Полей в анкете"
               value={profileQuery.isPending ? "—" : fields.length}
               description="Активные поля анкеты, настроенные администратором региона."
               icon={<ClipboardList size={21} />}
@@ -190,7 +190,7 @@ export function MenteeDashboard() {
             />
 
             <StatCard
-              title="Заполнено полей"
+              title="Заполненность анкеты"
               value={
                 profileQuery.isPending
                   ? "—"
