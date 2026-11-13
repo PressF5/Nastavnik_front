@@ -287,7 +287,7 @@ export function MenteeDashboard() {
             : "Требуется заполнение";
 
   return (
-    <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
+    <main className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <DashboardPageHeader
           title={
