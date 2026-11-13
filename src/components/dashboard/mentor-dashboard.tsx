@@ -287,7 +287,7 @@ export function MentorDashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
+    <main className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <DashboardPageHeader
           title="Кабинет наставника"
@@ -354,7 +354,11 @@ export function MentorDashboard() {
               Последние предложения
             </h2>
 
-            {requests.length === 0 && !requestsQuery.isPending ? (
+            {requestsQuery.isPending ? (
+              <p className="mt-4 text-sm text-slate-500">
+                Загружаем предложения наставничества...
+              </p>
+            ) : requests.length === 0 ? (
               <p className="mt-4 text-sm text-slate-500">
                 Новых предложений наставничества нет.
               </p>
@@ -384,7 +388,11 @@ export function MentorDashboard() {
               Предложения наставничества
             </h2>
 
-            {requests.length === 0 && !requestsQuery.isPending ? (
+            {requestsQuery.isPending ? (
+              <p className="mt-4 text-sm text-slate-500">
+                Загружаем предложения наставничества...
+              </p>
+            ) : requests.length === 0 ? (
               <p className="mt-4 text-sm text-slate-500">
                 Предложений, ожидающих вашего решения, нет.
               </p>
@@ -485,7 +493,11 @@ export function MentorDashboard() {
           <section className="rounded-xl border border-slate-200 bg-white p-5">
             <h2 className="font-semibold text-[#1D3557]">Мои наставляемые</h2>
 
-            {mentees.length === 0 && !menteesQuery.isPending ? (
+            {menteesQuery.isPending ? (
+              <p className="mt-4 text-sm text-slate-500">
+                Загружаем список наставляемых...
+              </p>
+            ) : mentees.length === 0 ? (
               <p className="mt-4 text-sm text-slate-500">
                 Действующих наставляемых пока нет.
               </p>
