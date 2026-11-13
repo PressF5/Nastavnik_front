@@ -103,6 +103,28 @@ const ooNavigation: {
   },
 ];
 
+const mentorNavigation: {
+  id: DashboardSection;
+  label: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  {
+    id: "overview",
+    label: "Обзор",
+    icon: LayoutDashboard,
+  },
+  {
+    id: "mentor-requests",
+    label: "Предложения наставничества",
+    icon: ClipboardCheck,
+  },
+  {
+    id: "mentees",
+    label: "Мои наставляемые",
+    icon: Users,
+  },
+];
+
 const profileFieldsNavigation = {
   label: "Конструктор анкет",
   icon: SlidersHorizontal,
@@ -120,9 +142,11 @@ export function DashboardSidebar({
       ? msuNavigation
       : user?.role === "OO_ADMIN"
         ? ooNavigation
-        : user?.role === "MENTOR" || user?.role === "MENTEE"
-          ? profileRoleNavigation
-          : regionNavigation;
+        : user?.role === "MENTOR"
+          ? mentorNavigation
+          : user?.role === "MENTEE"
+            ? profileRoleNavigation
+            : regionNavigation;
 
   const {
     section,

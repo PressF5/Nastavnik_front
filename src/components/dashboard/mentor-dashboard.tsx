@@ -39,6 +39,41 @@ type Mentorship = {
   menteeEducationalOrganizationName: string | null;
 };
 
+type MenteeProfile = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  birthDate: string | null;
+  msuName: string | null;
+  educationalOrganizationName: string | null;
+  mentorship: Mentorship;
+  profileValues: ProfileValue[];
+};
+
+type ProfileValue = {
+  id: number;
+  profileFieldId: number;
+  profileFieldName: string;
+  fieldType:
+    | "TEXT"
+    | "TEXTAREA"
+    | "NUMBER"
+    | "DATE"
+    | "BOOLEAN"
+    | "SELECT"
+    | "MULTISELECT";
+  valueText: string | null;
+  valueNumber: number | null;
+  valueBoolean: boolean | null;
+  valueDate: string | null;
+  selectedOptions: {
+    id: number;
+    value: string;
+    label: string;
+  }[];
+};
+
 type DecisionRequest = {
   decision: "ACCEPT" | "REJECT";
   comment?: string;
@@ -60,6 +95,38 @@ function fullName(item: Mentorship) {
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("ru-RU");
+}
+
+function formatProfileValue(item: ProfileValue): string {
+  switch (item.fieldType) {
+    case "TEXT":
+    case "TEXTAREA":
+      return item.valueText?.trim() || "Не заполнено";
+
+    case "NUMBER":
+      return item.valueNumber !== null
+        ? String(item.valueNumber)
+        : "Не заполнено";
+
+    case "DATE":
+      return item.valueDate ? formatDate(item.valueDate) : "Не заполнено";
+
+    case "BOOLEAN":
+      return item.valueBoolean === null
+        ? "Не заполнено"
+        : item.valueBoolean
+          ? "Да"
+          : "Нет";
+
+    case "SELECT":
+    case "MULTISELECT":
+      return item.selectedOptions.length > 0
+        ? item.selectedOptions.map((option) => option.label).join(", ")
+        : "Не заполнено";
+
+    default:
+      return "Не заполнено";
+  }
 }
 
 function StatCard({
@@ -97,6 +164,13 @@ export function MentorDashboard() {
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
     null,
   );
+  const [selectedMenteeId, setSelectedMenteeId] = useState<number | null>(null);
+
+  const [endingMentorshipId, setEndingMentorshipId] = useState<number | null>(
+    null,
+  );
+
+  const [endReason, setEndReason] = useState("");
 
   const requestsQuery = useQuery({
     queryKey: ["mentor", user?.id, "requests"],
@@ -108,6 +182,13 @@ export function MentorDashboard() {
     queryKey: ["mentor", user?.id, "mentees"],
     queryFn: () => apiFetch<Mentorship[]>("/api/mentor/mentees"),
     enabled: user?.role === "MENTOR",
+  });
+
+  const menteeProfileQuery = useQuery({
+    queryKey: ["mentor", user?.id, "mentee-profile", selectedMenteeId],
+    queryFn: () =>
+      apiFetch<MenteeProfile>(`/api/mentor/mentees/${selectedMenteeId}`),
+    enabled: user?.role === "MENTOR" && selectedMenteeId !== null,
   });
 
   const invalidateDashboard = async () => {
@@ -144,6 +225,30 @@ export function MentorDashboard() {
 
     onError: (error) => {
       toast.error("Не удалось обработать предложение", {
+        description: errorMessage(error),
+      });
+    },
+  });
+
+  const endMentorshipMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      apiFetch<Mentorship>(`/api/mentor/mentorship-assignments/${id}/end`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason }),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Наставничество завершено.");
+
+      setEndingMentorshipId(null);
+      setEndReason("");
+      setSelectedMenteeId(null);
+
+      await invalidateDashboard();
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось завершить наставничество", {
         description: errorMessage(error),
       });
     },
@@ -417,11 +522,323 @@ export function MentorDashboard() {
                     <p className="mt-3 text-sm font-medium text-emerald-700">
                       Наставничество действует
                     </p>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMenteeId(item.menteeId)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#27476f]"
+                      >
+                        <UserRound size={16} />
+                        Посмотреть анкету
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndingMentorshipId(item.id);
+                          setEndReason("");
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                      >
+                        <X size={16} />
+                        Завершить наставничество
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
             )}
           </section>
+        )}
+
+        {selectedMenteeId !== null && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-[#1D3557]">
+                  Анкета наставляемого
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Личная информация и заполненные профильные поля.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMenteeId(null)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Закрыть
+              </button>
+            </div>
+
+            {menteeProfileQuery.isPending && (
+              <p className="mt-5 text-sm text-slate-500">Загружаем анкету...</p>
+            )}
+
+            {menteeProfileQuery.isError && (
+              <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
+                <p className="text-sm text-red-700">
+                  Не удалось загрузить анкету наставляемого.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void menteeProfileQuery.refetch()}
+                  className="mt-2 text-sm font-medium text-[#457B9D] hover:underline"
+                >
+                  Повторить загрузку
+                </button>
+              </div>
+            )}
+
+            {menteeProfileQuery.data && (
+              <div className="mt-5 space-y-6">
+                {(() => {
+                  const profile = menteeProfileQuery.data;
+
+                  return (
+                    <>
+                      <div>
+                        <h3 className="font-semibold text-[#1D3557]">
+                          Основная информация
+                        </h3>
+
+                        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div>
+                            <p className="text-xs text-slate-500">ФИО</p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {[
+                                profile.lastName,
+                                profile.firstName,
+                                profile.middleName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Дата рождения
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.birthDate
+                                ? formatDate(profile.birthDate)
+                                : "Не указана"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">МСУ</p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.msuName ?? "Не указано"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Образовательная организация
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.educationalOrganizationName ??
+                                "Не указана"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Учебный год
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.mentorship.academicYearName}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Начало наставничества
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.mentorship.startedAt
+                                ? formatDate(profile.mentorship.startedAt)
+                                : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-200 pt-5">
+                        <h3 className="font-semibold text-[#1D3557]">
+                          Профильные поля
+                        </h3>
+
+                        {profile.profileValues.length === 0 ? (
+                          <p className="mt-3 text-sm text-slate-500">
+                            Наставляемый пока не заполнил профильные поля.
+                          </p>
+                        ) : (
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {profile.profileValues.map((value) => (
+                              <div
+                                key={value.id}
+                                className="rounded-lg border border-slate-200 p-4"
+                              >
+                                <p className="text-xs font-medium text-slate-500">
+                                  {value.profileFieldName}
+                                </p>
+
+                                <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
+                                  {formatProfileValue(value)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </section>
+        )}
+
+        {endingMentorshipId !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+            <section className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+              <h2 className="text-lg font-semibold text-[#1D3557]">
+                Завершение наставничества
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Укажи причину завершения наставничества. После подтверждения
+                назначение перейдёт в статус «Завершено».
+              </p>
+
+              <label
+                htmlFor="mentorship-end-reason"
+                className="mt-5 block text-sm font-medium text-slate-700"
+              >
+                Причина завершения
+              </label>
+
+              <textarea
+                id="mentorship-end-reason"
+                value={endReason}
+                onChange={(event) => setEndReason(event.target.value)}
+                maxLength={2000}
+                rows={4}
+                placeholder="Укажи причину завершения наставничества..."
+                className="mt-2 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              />
+
+              <p className="mt-1 text-right text-xs text-slate-400">
+                {endReason.length} / 2000
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={endMentorshipMutation.isPending}
+                  onClick={() => {
+                    setEndingMentorshipId(null);
+                    setEndReason("");
+                  }}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Отмена
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    endMentorshipMutation.isPending || !endReason.trim()
+                  }
+                  onClick={() => {
+                    endMentorshipMutation.mutate({
+                      id: endingMentorshipId,
+                      reason: endReason.trim(),
+                    });
+                  }}
+                  className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {endMentorshipMutation.isPending
+                    ? "Завершение..."
+                    : "Подтвердить завершение"}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {endingMentorshipId !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+            <section className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+              <h2 className="text-lg font-semibold text-[#1D3557]">
+                Завершение наставничества
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Укажи причину завершения наставничества. После подтверждения
+                назначение перейдёт в статус «Завершено».
+              </p>
+
+              <label
+                htmlFor="mentorship-end-reason"
+                className="mt-5 block text-sm font-medium text-slate-700"
+              >
+                Причина завершения
+              </label>
+
+              <textarea
+                id="mentorship-end-reason"
+                value={endReason}
+                onChange={(event) => setEndReason(event.target.value)}
+                maxLength={2000}
+                rows={4}
+                placeholder="Укажи причину завершения наставничества..."
+                className="mt-2 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              />
+
+              <p className="mt-1 text-right text-xs text-slate-400">
+                {endReason.length} / 2000
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={endMentorshipMutation.isPending}
+                  onClick={() => {
+                    setEndingMentorshipId(null);
+                    setEndReason("");
+                  }}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Отмена
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    endMentorshipMutation.isPending || !endReason.trim()
+                  }
+                  onClick={() => {
+                    endMentorshipMutation.mutate({
+                      id: endingMentorshipId,
+                      reason: endReason.trim(),
+                    });
+                  }}
+                  className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {endMentorshipMutation.isPending
+                    ? "Завершение..."
+                    : "Подтвердить завершение"}
+                </button>
+              </div>
+            </section>
+          </div>
         )}
 
         {isLoading && (
