@@ -48,6 +48,11 @@ const profileRoleNavigation: {
     label: "Обзор",
     icon: LayoutDashboard,
   },
+  {
+    id: "mentorship",
+    label: "Моё наставничество",
+    icon: Users,
+  },
 ];
 
 const msuNavigation: {
