@@ -1194,6 +1194,93 @@ export function OoAdminDashboard() {
                         </p>
                       </div>
                     </div>
+
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedHistoryId((current) =>
+                            current === assignment.id ? null : assignment.id,
+                          )
+                        }
+                        className="inline-flex items-center gap-2 text-sm font-medium text-[#457B9D] transition hover:text-[#1D3557]"
+                      >
+                        <History size={16} />
+                        История изменений
+                        {expandedHistoryId === assignment.id ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
+                      </button>
+
+                      {expandedHistoryId === assignment.id && (
+                        <div className="mt-4">
+                          {mentorshipHistoryQuery.isPending ? (
+                            <p className="py-4 text-sm text-slate-500">
+                              Загружаем историю изменений...
+                            </p>
+                          ) : mentorshipHistoryQuery.isError ? (
+                            <div
+                              role="alert"
+                              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                            >
+                              Не удалось загрузить историю изменений.
+                            </div>
+                          ) : !mentorshipHistoryQuery.data?.length ? (
+                            <p className="py-4 text-sm text-slate-500">
+                              История изменений пока пуста.
+                            </p>
+                          ) : (
+                            <div className="space-y-4">
+                              {mentorshipHistoryQuery.data.map((log, index) => (
+                                <div key={log.id} className="relative pl-6">
+                                  <span className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-[#457B9D]" />
+
+                                  {index !==
+                                    mentorshipHistoryQuery.data!.length - 1 && (
+                                    <span className="absolute -bottom-4.5 left-1 top-5 w-px bg-slate-200" />
+                                  )}
+
+                                  <div>
+                                    <p className="text-sm font-medium text-[#1D3557]">
+                                      {auditActionLabel(log.action)}
+                                    </p>
+
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      {formatDateTime(log.createdAt)}
+                                    </p>
+
+                                    <p className="mt-1 text-sm text-slate-600">
+                                      {log.actorName}
+                                      {log.source === "SYSTEM" && " · Система"}
+                                    </p>
+
+                                    {(log.oldStatus || log.newStatus) && (
+                                      <p className="mt-2 text-xs text-slate-500">
+                                        Статус: {log.oldStatus ?? "—"} →{" "}
+                                        {log.newStatus ?? "—"}
+                                      </p>
+                                    )}
+
+                                    {log.comment && (
+                                      <div className="mt-2 rounded-lg bg-slate-50 p-3">
+                                        <p className="text-xs font-medium text-slate-500">
+                                          Комментарий
+                                        </p>
+                                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                                          {log.comment}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </article>
                 ))}
               </div>
