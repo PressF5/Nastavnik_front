@@ -2,7 +2,10 @@
 
 import {
   Building2,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
+  History,
   RefreshCw,
   UserRound,
   Users,
@@ -99,6 +102,17 @@ type MentorshipAssignment = {
   menteeEducationalOrganizationName: string | null;
 };
 
+type MentorshipAuditLog = {
+  id: number;
+  action: string;
+  oldStatus: string | null;
+  newStatus: string | null;
+  comment: string | null;
+  actorName: string;
+  source: "USER" | "SYSTEM";
+  createdAt: string;
+};
+
 const primaryButton =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f] disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -178,6 +192,31 @@ function mentorshipStatusClass(status: MentorshipAssignment["status"]) {
   }
 }
 
+function auditActionLabel(action: string) {
+  switch (action) {
+    case "REQUEST_CREATED":
+      return "Создана заявка на назначение";
+    case "REQUEST_ACCEPTED":
+      return "Наставник принял заявку";
+    case "REQUEST_REJECTED":
+      return "Наставник отклонил заявку";
+    case "MENTORSHIP_ENDED":
+      return "Наставничество завершено";
+    default:
+      return action;
+  }
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function OoAdminDashboard() {
   const queryClient = useQueryClient();
 
@@ -199,6 +238,9 @@ export function OoAdminDashboard() {
     "ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED"
   >("ALL");
   const [assignmentPage, setAssignmentPage] = useState(0);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<number | null>(
+    null,
+  );
 
   const pendingMenteesQuery = useQuery({
     queryKey: [
@@ -296,6 +338,18 @@ export function OoAdminDashboard() {
         },
       ),
     enabled: user?.role === "OO_ADMIN" && section === "mentorship-assignments",
+  });
+
+  const mentorshipHistoryQuery = useQuery({
+    queryKey: ["oo-admin", user?.id, "mentorship-history", expandedHistoryId],
+    queryFn: () =>
+      apiFetch<MentorshipAuditLog[]>(
+        `/api/admin/mentorship-assignments/${expandedHistoryId}/history`,
+      ),
+    enabled:
+      user?.role === "OO_ADMIN" &&
+      section === "mentorship-assignments" &&
+      expandedHistoryId !== null,
   });
 
   const invalidateDashboard = async () => {
