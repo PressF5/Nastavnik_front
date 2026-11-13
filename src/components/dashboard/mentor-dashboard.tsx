@@ -45,6 +45,7 @@ type MenteeProfile = {
   lastName: string;
   middleName: string | null;
   birthDate: string | null;
+  regionName: string | null;
   msuName: string | null;
   educationalOrganizationName: string | null;
   mentorship: Mentorship;
@@ -628,6 +629,13 @@ export function MentorDashboard() {
                               {profile.birthDate
                                 ? formatDate(profile.birthDate)
                                 : "Не указана"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">Регион</p>
+                            <p className="mt-1 text-sm font-medium text-slate-800">
+                              {profile.regionName ?? "Не указан"}
                             </p>
                           </div>
 
