@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -9,6 +10,8 @@ import {
   Users,
   ClipboardCheck,
   UserRound,
+  ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -73,6 +76,39 @@ type ProfileValue = {
     value: string;
     label: string;
   }[];
+};
+
+type ProfileFieldType =
+  | "TEXT"
+  | "TEXTAREA"
+  | "NUMBER"
+  | "DATE"
+  | "BOOLEAN"
+  | "SELECT"
+  | "MULTISELECT";
+
+type ProfileFormField = {
+  field: {
+    id: number;
+    name: string;
+    fieldType: ProfileFieldType;
+    roles: {
+      roleCode: string;
+      required: boolean;
+      sortOrder: number;
+    }[];
+  };
+  savedValue: {
+    valueText: string | null;
+    valueNumber: number | null;
+    valueBoolean: boolean | null;
+    valueDate: string | null;
+    selectedOptions: {
+      id: number;
+      value: string;
+      label: string;
+    }[];
+  } | null;
 };
 
 type DecisionRequest = {
@@ -148,6 +184,36 @@ function formatProfileValue(item: ProfileValue): string {
   }
 }
 
+function hasProfileValue(item: ProfileFormField): boolean {
+  const saved = item.savedValue;
+
+  if (!saved) {
+    return false;
+  }
+
+  switch (item.field.fieldType) {
+    case "TEXT":
+    case "TEXTAREA":
+      return Boolean(saved.valueText?.trim());
+
+    case "NUMBER":
+      return saved.valueNumber !== null && saved.valueNumber !== undefined;
+
+    case "BOOLEAN":
+      return saved.valueBoolean !== null && saved.valueBoolean !== undefined;
+
+    case "DATE":
+      return Boolean(saved.valueDate);
+
+    case "SELECT":
+    case "MULTISELECT":
+      return Boolean(saved.selectedOptions?.length);
+
+    default:
+      return false;
+  }
+}
+
 function StatCard({
   title,
   value,
@@ -190,6 +256,14 @@ export function MentorDashboard() {
   );
 
   const [endReason, setEndReason] = useState("");
+
+  const router = useRouter();
+
+  const profileQuery = useQuery({
+    queryKey: ["profile", "my-form", user?.id],
+    queryFn: () => apiFetch<ProfileFormField[]>("/api/profile-values/my-form"),
+    enabled: user?.role === "MENTOR",
+  });
 
   const requestsQuery = useQuery({
     queryKey: ["mentor", user?.id, "requests"],
@@ -275,6 +349,30 @@ export function MentorDashboard() {
 
   const requests = requestsQuery.data ?? [];
   const mentees = menteesQuery.data ?? [];
+  const profileFields = profileQuery.data ?? [];
+
+  const requiredProfileFields = profileFields.filter((item) =>
+    item.field.roles.some(
+      (role) => role.roleCode === "MENTOR" && role.required,
+    ),
+  );
+
+  const completedRequiredProfileFields =
+    requiredProfileFields.filter(hasProfileValue).length;
+
+  const completedProfileFields = profileFields.filter(hasProfileValue).length;
+
+  const profileStatus = profileQuery.isPending
+    ? "Загружаем анкету"
+    : profileQuery.isError
+      ? "Не удалось загрузить"
+      : profileFields.length === 0
+        ? "Поля не настроены"
+        : requiredProfileFields.length === 0
+          ? "Можно заполнить"
+          : completedRequiredProfileFields === requiredProfileFields.length
+            ? "Обязательные поля заполнены"
+            : "Требуется заполнение";
 
   const isLoading = requestsQuery.isPending || menteesQuery.isPending;
 
@@ -330,6 +428,82 @@ export function MentorDashboard() {
               description="Количество оставшихся мест из трёх возможных."
               icon={<UserRound size={21} />}
             />
+          </section>
+        )}
+
+        {section === "overview" && (
+          <section className="space-y-5">
+            <div>
+              <h2 className="text-lg font-semibold text-[#1D3557]">
+                Мой профиль
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Заполнение профильной анкеты наставника.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <StatCard
+                title="Полей в анкете"
+                value={profileQuery.isPending ? "—" : profileFields.length}
+                description="Активные поля анкеты, настроенные администратором региона."
+                icon={<ClipboardList size={21} />}
+              />
+
+              <StatCard
+                title="Обязательные поля"
+                value={
+                  profileQuery.isPending
+                    ? "—"
+                    : `${completedRequiredProfileFields} / ${requiredProfileFields.length}`
+                }
+                description="Количество обязательных полей, которые уже заполнены."
+                icon={<CheckCircle2 size={21} />}
+              />
+
+              <StatCard
+                title="Заполненность анкеты"
+                value={
+                  profileQuery.isPending
+                    ? "—"
+                    : `${completedProfileFields} / ${profileFields.length}`
+                }
+                description="Количество заполненных полей анкеты."
+                icon={<UserRound size={21} />}
+              />
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+              <h3 className="font-semibold text-[#1D3557]">Состояние анкеты</h3>
+
+              <p className="mt-2 text-sm text-slate-600">{profileStatus}</p>
+
+              {profileQuery.isError && (
+                <button
+                  type="button"
+                  onClick={() => void profileQuery.refetch()}
+                  className="mt-3 text-sm font-medium text-[#457B9D] hover:underline"
+                >
+                  Повторить загрузку
+                </button>
+              )}
+
+              {profileQuery.isSuccess && profileFields.length === 0 && (
+                <p className="mt-3 text-sm text-slate-500">
+                  Для вашей роли пока не настроены поля анкеты.
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/profile")}
+                className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                <ClipboardList size={17} />
+                Перейти к заполнению анкеты
+              </button>
+            </div>
           </section>
         )}
 
