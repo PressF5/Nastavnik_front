@@ -212,8 +212,16 @@ export function MenteeDashboard() {
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <DashboardPageHeader
-          title="Кабинет наставляемого"
-          description="Личный кабинет молодого специалиста."
+          title={
+            section === "mentorship"
+              ? "Моё наставничество"
+              : "Кабинет наставляемого"
+          }
+          description={
+            section === "mentorship"
+              ? "Информация о назначенном наставнике и текущем состоянии наставничества."
+              : "Личный кабинет молодого специалиста."
+          }
           action={
             <button
               type="button"
@@ -298,11 +306,6 @@ export function MenteeDashboard() {
         )}
         {section === "mentorship" && (
           <section className="space-y-5">
-            <DashboardPageHeader
-              title="Моё наставничество"
-              description="Информация о назначенном наставнике и текущем состоянии наставничества."
-            />
-
             {mentorshipQuery.isPending && (
               <div className="rounded-xl border border-slate-200 bg-white p-6">
                 <p className="text-sm text-slate-500">
