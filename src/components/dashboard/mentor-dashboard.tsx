@@ -95,7 +95,25 @@ function fullName(item: Mentorship) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ru-RU");
+  // LocalDate (например, 2026-11-13) форматируем без преобразования часового пояса.
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+    return date.toLocaleDateString("ru-RU");
+  }
+
+  // Instant и другие значения с временем форматируем как обычную дату.
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("ru-RU");
 }
 
 function formatProfileValue(item: ProfileValue): string {
@@ -105,7 +123,7 @@ function formatProfileValue(item: ProfileValue): string {
       return item.valueText?.trim() || "Не заполнено";
 
     case "NUMBER":
-      return item.valueNumber !== null
+      return item.valueNumber !== null && item.valueNumber !== undefined
         ? String(item.valueNumber)
         : "Не заполнено";
 
@@ -113,15 +131,15 @@ function formatProfileValue(item: ProfileValue): string {
       return item.valueDate ? formatDate(item.valueDate) : "Не заполнено";
 
     case "BOOLEAN":
-      return item.valueBoolean === null
-        ? "Не заполнено"
-        : item.valueBoolean
-          ? "Да"
-          : "Нет";
+      if (item.valueBoolean === null || item.valueBoolean === undefined) {
+        return "Не заполнено";
+      }
+
+      return item.valueBoolean ? "Да" : "Нет";
 
     case "SELECT":
     case "MULTISELECT":
-      return item.selectedOptions.length > 0
+      return item.selectedOptions?.length
         ? item.selectedOptions.map((option) => option.label).join(", ")
         : "Не заполнено";
 
