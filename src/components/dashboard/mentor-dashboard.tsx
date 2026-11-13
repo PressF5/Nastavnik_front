@@ -314,31 +314,6 @@ export function MentorDashboard() {
             />
           </section>
         )}
-        <section className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSection("overview")}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Обзор
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSection("mentor-requests")}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Предложения ({requests.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSection("mentees")}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Мои наставляемые ({mentees.length})
-          </button>
-        </section>
 
         {hasError && (
           <section className="rounded-xl border border-red-200 bg-white p-5">
