@@ -84,6 +84,11 @@ const ooNavigation: {
     label: "Назначение наставника",
     icon: Users,
   },
+  {
+    id: "mentorship-assignments",
+    label: "Назначения наставничества",
+    icon: ClipboardCheck,
+  },
 ];
 
 const profileFieldsNavigation = {

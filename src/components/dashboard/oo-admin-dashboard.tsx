@@ -73,6 +73,32 @@ type CreatedMentorship = {
   status: "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED";
 };
 
+type MentorshipAssignment = {
+  id: number;
+
+  mentorId: number;
+  mentorFirstName: string;
+  mentorLastName: string;
+  mentorMiddleName: string | null;
+
+  menteeId: number;
+  menteeFirstName: string;
+  menteeLastName: string;
+  menteeMiddleName: string | null;
+
+  academicYearId: number;
+  academicYearName: string;
+
+  status: "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED";
+
+  createdAt: string;
+  startedAt: string | null;
+  endedAt: string | null;
+
+  mentorEducationalOrganizationName: string | null;
+  menteeEducationalOrganizationName: string | null;
+};
+
 const primaryButton =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f] disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -118,6 +144,40 @@ function StatCard({
   );
 }
 
+function formatDate(value: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleDateString("ru-RU");
+}
+
+function mentorshipStatusLabel(status: MentorshipAssignment["status"]) {
+  switch (status) {
+    case "PENDING":
+      return "Ожидает ответа наставника";
+    case "ACCEPTED":
+      return "Действует";
+    case "REJECTED":
+      return "Отклонено наставником";
+    case "ENDED":
+      return "Завершено";
+  }
+}
+
+function mentorshipStatusClass(status: MentorshipAssignment["status"]) {
+  switch (status) {
+    case "PENDING":
+      return "bg-amber-50 text-amber-700";
+    case "ACCEPTED":
+      return "bg-emerald-50 text-emerald-700";
+    case "REJECTED":
+      return "bg-red-50 text-red-700";
+    case "ENDED":
+      return "bg-slate-100 text-slate-600";
+  }
+}
+
 export function OoAdminDashboard() {
   const queryClient = useQueryClient();
 
@@ -132,6 +192,13 @@ export function OoAdminDashboard() {
   const [menteeSearch, setMenteeSearch] = useState("");
   const [menteePage, setMenteePage] = useState(0);
   const [selectedMenteeId, setSelectedMenteeId] = useState("");
+
+  const [assignmentSearchInput, setAssignmentSearchInput] = useState("");
+  const [assignmentSearch, setAssignmentSearch] = useState("");
+  const [assignmentStatus, setAssignmentStatus] = useState<
+    "ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED"
+  >("ALL");
+  const [assignmentPage, setAssignmentPage] = useState(0);
 
   const pendingMenteesQuery = useQuery({
     queryKey: [
@@ -207,6 +274,30 @@ export function OoAdminDashboard() {
       selectedMenteeId !== "",
   });
 
+  const mentorshipAssignmentsQuery = useQuery({
+    queryKey: [
+      "oo-admin",
+      user?.id,
+      "mentorship-assignments",
+      assignmentSearch,
+      assignmentStatus,
+      assignmentPage,
+    ],
+    queryFn: () =>
+      apiFetch<SpringPage<MentorshipAssignment>>(
+        "/api/admin/mentorship-assignments",
+        {
+          params: {
+            search: assignmentSearch || undefined,
+            status: assignmentStatus === "ALL" ? undefined : assignmentStatus,
+            page: assignmentPage,
+            size: PAGE_SIZE,
+          },
+        },
+      ),
+    enabled: user?.role === "OO_ADMIN" && section === "mentorship-assignments",
+  });
+
   const invalidateDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -217,6 +308,9 @@ export function OoAdminDashboard() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["oo-admin", user?.id, "accepted-mentees-count"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["oo-admin", user?.id, "mentorship-assignments"],
       }),
     ]);
   };
@@ -308,12 +402,14 @@ export function OoAdminDashboard() {
 
   const pendingMentees = pendingMenteesQuery.data?.content ?? [];
   const mentees = menteesQuery.data?.content ?? [];
+  const mentorshipAssignments = mentorshipAssignmentsQuery.data?.content ?? [];
 
   const isRefreshing =
     pendingMenteesQuery.isFetching ||
     menteesQuery.isFetching ||
     availableMenteesQuery.isFetching ||
     mentorCandidatesQuery.isFetching ||
+    mentorshipAssignmentsQuery.isFetching ||
     acceptedMenteesQuery.isFetching;
 
   const hasError =
@@ -321,6 +417,7 @@ export function OoAdminDashboard() {
     menteesQuery.isError ||
     availableMenteesQuery.isError ||
     mentorCandidatesQuery.isError ||
+    mentorshipAssignmentsQuery.isError ||
     acceptedMenteesQuery.isError;
 
   return (
@@ -862,6 +959,228 @@ export function OoAdminDashboard() {
                 )}
               </div>
             )}
+          </section>
+        )}
+
+        {section === "mentorship-assignments" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div>
+              <h2 className="font-semibold text-[#1D3557]">
+                Назначения наставничества
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                История назначений наставников наставляемым вашей
+                образовательной организации.
+              </p>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setAssignmentPage(0);
+                setAssignmentSearch(assignmentSearchInput.trim());
+              }}
+              className="mt-5 flex flex-col gap-3 lg:flex-row"
+            >
+              <input
+                type="search"
+                value={assignmentSearchInput}
+                onChange={(event) =>
+                  setAssignmentSearchInput(event.target.value)
+                }
+                placeholder="Поиск по ФИО наставника или наставляемого"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              />
+
+              <select
+                value={assignmentStatus}
+                onChange={(event) => {
+                  setAssignmentStatus(
+                    event.target.value as typeof assignmentStatus,
+                  );
+                  setAssignmentPage(0);
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20"
+              >
+                <option value="ALL">Все статусы</option>
+                <option value="PENDING">Ожидают ответа</option>
+                <option value="ACCEPTED">Действующие</option>
+                <option value="REJECTED">Отклонённые</option>
+                <option value="ENDED">Завершённые</option>
+              </select>
+
+              <button type="submit" className={primaryButton}>
+                Найти
+              </button>
+
+              <button
+                type="button"
+                className={secondaryButton}
+                onClick={() => {
+                  setAssignmentSearchInput("");
+                  setAssignmentSearch("");
+                  setAssignmentStatus("ALL");
+                  setAssignmentPage(0);
+                }}
+              >
+                Сбросить
+              </button>
+            </form>
+
+            {mentorshipAssignmentsQuery.isPending ? (
+              <p className="py-10 text-sm text-slate-500">
+                Загружаем назначения наставничества...
+              </p>
+            ) : mentorshipAssignmentsQuery.isError ? (
+              <div
+                role="alert"
+                className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+              >
+                Не удалось загрузить назначения наставничества.
+              </div>
+            ) : mentorshipAssignments.length === 0 ? (
+              <p className="py-10 text-sm text-slate-500">
+                Назначений наставничества пока нет.
+              </p>
+            ) : (
+              <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                {mentorshipAssignments.map((assignment) => (
+                  <article
+                    key={assignment.id}
+                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          Назначение №{assignment.id}
+                        </p>
+
+                        <p className="mt-1 font-semibold text-[#1D3557]">
+                          Учебный год: {assignment.academicYearName}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${mentorshipStatusClass(
+                          assignment.status,
+                        )}`}
+                      >
+                        {mentorshipStatusLabel(assignment.status)}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          Наставник
+                        </p>
+
+                        <p className="mt-2 text-sm font-semibold text-slate-800">
+                          {[
+                            assignment.mentorLastName,
+                            assignment.mentorFirstName,
+                            assignment.mentorMiddleName,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {assignment.mentorEducationalOrganizationName ??
+                            "Организация не указана"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          Наставляемый
+                        </p>
+
+                        <p className="mt-2 text-sm font-semibold text-slate-800">
+                          {[
+                            assignment.menteeLastName,
+                            assignment.menteeFirstName,
+                            assignment.menteeMiddleName,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {assignment.menteeEducationalOrganizationName ??
+                            "Организация не указана"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Дата назначения
+                        </p>
+                        <p className="mt-1 text-sm text-slate-700">
+                          {formatDate(assignment.createdAt)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Начало наставничества
+                        </p>
+                        <p className="mt-1 text-sm text-slate-700">
+                          {formatDate(assignment.startedAt)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-400">Завершение</p>
+                        <p className="mt-1 text-sm text-slate-700">
+                          {formatDate(assignment.endedAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {mentorshipAssignmentsQuery.data &&
+              mentorshipAssignmentsQuery.data.totalPages > 0 && (
+                <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-5 sm:flex-row">
+                  <p className="text-sm text-slate-500">
+                    Всего назначений:{" "}
+                    {mentorshipAssignmentsQuery.data.totalElements}
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={mentorshipAssignmentsQuery.data.first}
+                      onClick={() =>
+                        setAssignmentPage((page) => Math.max(0, page - 1))
+                      }
+                      className={secondaryButton}
+                    >
+                      Назад
+                    </button>
+
+                    <span className="text-sm text-slate-600">
+                      Страница {mentorshipAssignmentsQuery.data.number + 1} из{" "}
+                      {mentorshipAssignmentsQuery.data.totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={mentorshipAssignmentsQuery.data.last}
+                      onClick={() => setAssignmentPage((page) => page + 1)}
+                      className={secondaryButton}
+                    >
+                      Далее
+                    </button>
+                  </div>
+                </div>
+              )}
           </section>
         )}
 
