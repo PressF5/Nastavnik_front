@@ -3,9 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ClipboardList,
   UserRound,
-  CheckCircle2,
   Building2,
   CalendarDays,
   Users,
@@ -192,33 +190,6 @@ function hasValue(item: ProfileFormField): boolean {
     case "MULTISELECT":
       return saved.selectedOptions.length > 0;
   }
-}
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon,
-}: {
-  title: string;
-  value: string | number;
-  description: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-500">{title}</p>
-          <p className="mt-3 text-3xl font-semibold text-[#1D3557]">{value}</p>
-        </div>
-
-        <div className="rounded-xl bg-[#E8F0F5] p-3 text-[#457B9D]">{icon}</div>
-      </div>
-
-      <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
-    </article>
-  );
 }
 
 export function MenteeDashboard() {

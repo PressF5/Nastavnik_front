@@ -10,8 +10,6 @@ import {
   Users,
   ClipboardCheck,
   UserRound,
-  ClipboardList,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -362,10 +360,6 @@ export function MentorDashboard() {
     requiredProfileFields.filter(hasProfileValue).length;
 
   const completedProfileFields = profileFields.filter(hasProfileValue).length;
-  const profileCompletionPercent =
-    profileFields.length === 0
-      ? 0
-      : Math.round((completedProfileFields / profileFields.length) * 100);
 
   const profileStatus = profileQuery.isPending
     ? "Загружаем анкету"
