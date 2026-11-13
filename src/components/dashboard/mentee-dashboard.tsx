@@ -174,7 +174,13 @@ export function MenteeDashboard() {
 
   const mentorshipQuery = useQuery({
     queryKey: ["mentee", "mentorship", user?.id],
-    queryFn: () => apiFetch<Mentorship | undefined>("/api/mentee/mentorship"),
+    queryFn: async () => {
+      const response = await apiFetch<Mentorship | null>(
+        "/api/mentee/mentorship",
+      );
+
+      return response ?? null;
+    },
     enabled: user?.role === "MENTEE" && section === "mentorship",
   });
 
