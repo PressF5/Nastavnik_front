@@ -385,6 +385,12 @@ export default function ProfilePage() {
                     const required = roleAssignment?.required ?? false;
                     const value = values[field.id];
 
+                    const selectedOptionIds = Array.isArray(value) ? value : [];
+                    const visibleOptions = field.options.filter(
+                      (option) =>
+                        option.active || selectedOptionIds.includes(option.id),
+                    );
+
                     return (
                       <div key={field.id}>
                         <label
@@ -485,8 +491,8 @@ export default function ProfilePage() {
                             id={`field-${field.id}`}
                             className={inputClass}
                             value={
-                              Array.isArray(value) && value.length > 0
-                                ? String(value[0])
+                              selectedOptionIds.length > 0
+                                ? String(selectedOptionIds[0])
                                 : ""
                             }
                             required={required}
@@ -501,55 +507,68 @@ export default function ProfilePage() {
                           >
                             <option value="">Выберите вариант</option>
 
-                            {field.options
-                              .filter((option) => option.active)
-                              .map((option) => (
-                                <option key={option.id} value={option.id}>
-                                  {option.label}
-                                </option>
-                              ))}
+                            {visibleOptions.map((option) => (
+                              <option
+                                key={option.id}
+                                value={option.id}
+                                disabled={!option.active}
+                              >
+                                {option.label}
+                                {!option.active ? " (неактивен)" : ""}
+                              </option>
+                            ))}
                           </select>
                         )}
 
                         {/* MULTISELECT */}
                         {field.fieldType === "MULTISELECT" && (
                           <div className="mt-3 space-y-2 rounded-lg border border-slate-200 p-3">
-                            {field.options
-                              .filter((option) => option.active)
-                              .map((option) => {
-                                const selectedIds = Array.isArray(value)
-                                  ? value
-                                  : [];
+                            {visibleOptions.map((option) => {
+                              const isSelected = selectedOptionIds.includes(
+                                option.id,
+                              );
 
-                                return (
-                                  <label
-                                    key={option.id}
-                                    className="flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm hover:bg-slate-50"
+                              return (
+                                <label
+                                  key={option.id}
+                                  className={`flex items-center gap-3 rounded-md p-2 text-sm ${
+                                    option.active
+                                      ? "cursor-pointer hover:bg-slate-50"
+                                      : "cursor-default bg-slate-50"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    disabled={!option.active && !isSelected}
+                                    onChange={(event) => {
+                                      const nextIds = event.target.checked
+                                        ? [...selectedOptionIds, option.id]
+                                        : selectedOptionIds.filter(
+                                            (id) => id !== option.id,
+                                          );
+
+                                      updateValue(field.id, nextIds);
+                                    }}
+                                    className="size-4 rounded border-slate-300 text-[#457B9D] focus:ring-[#457B9D]"
+                                  />
+
+                                  <span
+                                    className={
+                                      !option.active ? "text-slate-500" : ""
+                                    }
                                   >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIds.includes(option.id)}
-                                      onChange={(event) => {
-                                        const nextIds = event.target.checked
-                                          ? [...selectedIds, option.id]
-                                          : selectedIds.filter(
-                                              (id) => id !== option.id,
-                                            );
-
-                                        updateValue(field.id, nextIds);
-                                      }}
-                                      className="size-4 rounded border-slate-300 text-[#457B9D] focus:ring-[#457B9D]"
-                                    />
-
                                     {option.label}
-                                  </label>
-                                );
-                              })}
+                                    {!option.active ? " (неактивен)" : ""}
+                                  </span>
+                                </label>
+                              );
+                            })}
 
-                            {field.options.filter((option) => option.active)
-                              .length === 0 && (
+                            {!field.options.some((option) => option.active) && (
                               <p className="text-sm text-slate-500">
-                                Варианты ответа пока не настроены.
+                                Новых вариантов ответа пока нет. Сохранённые
+                                неактивные варианты можно снять.
                               </p>
                             )}
                           </div>
