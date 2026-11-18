@@ -19,6 +19,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { ProfileCompletionSection } from "@/components/dashboard/profile-completion-section";
+import { ProfileValuesList } from "@/components/dashboard/profile-values-list";
 
 type MentorshipStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED";
 
@@ -853,28 +854,11 @@ export function MentorDashboard() {
                                 Профильные поля
                               </h3>
 
-                              {profile.profileValues.length === 0 ? (
-                                <p className="mt-3 text-sm text-slate-500">
-                                  Наставляемый пока не заполнил профильные поля.
-                                </p>
-                              ) : (
-                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  {profile.profileValues.map((value) => (
-                                    <div
-                                      key={value.id}
-                                      className="rounded-lg border border-slate-200 p-4"
-                                    >
-                                      <p className="text-xs font-medium text-slate-500">
-                                        {value.profileFieldName}
-                                      </p>
-
-                                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
-                                        {formatProfileValue(value)}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
+                              <ProfileValuesList
+                                items={profile.profileValues}
+                                getValue={formatProfileValue}
+                                emptyMessage="Наставляемый пока не заполнил профильные поля."
+                              />
                             </div>
                           </>
                         );

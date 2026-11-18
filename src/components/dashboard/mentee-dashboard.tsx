@@ -15,6 +15,7 @@ import {
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
 import { useState } from "react";
 import { ProfileCompletionSection } from "@/components/dashboard/profile-completion-section";
+import { ProfileValuesList } from "@/components/dashboard/profile-values-list";
 
 type ProfileFieldType =
   | "TEXT"
@@ -550,34 +551,11 @@ export function MenteeDashboard() {
                               Анкета наставника
                             </h3>
 
-                            {mentorProfileQuery.data.profileValues.length ===
-                            0 ? (
-                              <div className="rounded-lg border border-slate-200 p-5">
-                                <p className="text-sm text-slate-500">
-                                  Наставник пока не заполнил дополнительные поля
-                                  анкеты.
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="grid gap-3 sm:grid-cols-2">
-                                {mentorProfileQuery.data.profileValues.map(
-                                  (item) => (
-                                    <div
-                                      key={item.profileFieldId}
-                                      className="rounded-lg border border-slate-200 p-4"
-                                    >
-                                      <p className="text-xs font-medium text-slate-500">
-                                        {item.profileFieldName}
-                                      </p>
-
-                                      <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-800">
-                                        {formatProfileValue(item)}
-                                      </p>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            )}
+                            <ProfileValuesList
+                              items={mentorProfileQuery.data.profileValues}
+                              getValue={formatProfileValue}
+                              emptyMessage="Наставник пока не заполнил дополнительные поля анкеты."
+                            />
                           </section>
                         </div>
                       </article>

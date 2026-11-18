@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog } from "radix-ui";
 import { LoaderCircle, Mail, UserRound, X } from "lucide-react";
+import { ProfileValuesList } from "@/components/dashboard/profile-values-list";
 
 import { apiFetch } from "@/lib/api-client";
 
@@ -273,28 +274,12 @@ export function UserProfileDialog({ userId }: UserProfileDialogProps) {
                     Анкета профиля
                   </h3>
 
-                  {profile.profileValues.length === 0 ? (
-                    <p className="mt-4 text-sm text-slate-500">
-                      Пользователь пока не заполнил анкету.
-                    </p>
-                  ) : (
-                    <div className="mt-4 divide-y divide-slate-100">
-                      {profile.profileValues.map((field) => (
-                        <div
-                          key={field.profileFieldId}
-                          className="grid gap-1 py-3 sm:grid-cols-2 sm:gap-4"
-                        >
-                          <p className="text-sm text-slate-500">
-                            {field.profileFieldName}
-                          </p>
-
-                          <p className="text-sm font-medium text-slate-800 sm:text-right">
-                            {getProfileValue(field)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <ProfileValuesList
+                    items={profile.profileValues}
+                    getValue={getProfileValue}
+                    emptyMessage="Пользователь пока не заполнил анкету."
+                    variant="rows"
+                  />
                 </section>
 
                 {/* Служебная информация */}
