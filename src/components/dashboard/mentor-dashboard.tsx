@@ -250,6 +250,9 @@ export function MentorDashboard() {
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
     null,
   );
+  const [selectedRequestProfileId, setSelectedRequestProfileId] = useState<
+    number | null
+  >(null);
   const [selectedMenteeId, setSelectedMenteeId] = useState<number | null>(null);
 
   const [endingMentorshipId, setEndingMentorshipId] = useState<number | null>(
@@ -283,6 +286,20 @@ export function MentorDashboard() {
     queryFn: () =>
       apiFetch<MenteeProfile>(`/api/mentor/mentees/${selectedMenteeId}`),
     enabled: user?.role === "MENTOR" && selectedMenteeId !== null,
+  });
+
+  const pendingMenteeProfileQuery = useQuery({
+    queryKey: [
+      "mentor",
+      user?.id,
+      "pending-mentee-profile",
+      selectedRequestProfileId,
+    ],
+    queryFn: () =>
+      apiFetch<MenteeProfile>(
+        `/api/mentor/mentorship-assignments/${selectedRequestProfileId}/mentee-profile`,
+      ),
+    enabled: user?.role === "MENTOR" && selectedRequestProfileId !== null,
   });
 
   const invalidateDashboard = async () => {
@@ -551,6 +568,14 @@ export function MentorDashboard() {
                     <div className="mt-5 flex flex-wrap gap-2">
                       <button
                         type="button"
+                        onClick={() => setSelectedRequestProfileId(item.id)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-[#457B9D]/30 bg-[#457B9D]/5 px-4 py-2 text-sm font-medium text-[#1D3557] hover:bg-[#457B9D]/10"
+                      >
+                        <UserRound size={16} />
+                        Посмотреть анкету
+                      </button>
+                      <button
+                        type="button"
                         disabled={decisionMutation.isPending}
                         onClick={() =>
                           decisionMutation.mutate({
@@ -611,6 +636,153 @@ export function MentorDashboard() {
               </div>
             )}
           </section>
+        )}
+
+        {section === "mentor-requests" && (
+          <Dialog.Root
+            open={selectedRequestProfileId !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedRequestProfileId(null);
+              }
+            }}
+          >
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+
+              <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-200 bg-[#F8F9FA] p-5 shadow-2xl sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <Dialog.Title className="text-lg font-semibold text-[#1D3557]">
+                      Анкета наставляемого
+                    </Dialog.Title>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Информация о пользователе и заполненные профильные поля.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRequestProfileId(null)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+
+                {pendingMenteeProfileQuery.isPending && (
+                  <p className="mt-5 text-sm text-slate-500">
+                    Загружаем анкету...
+                  </p>
+                )}
+
+                {pendingMenteeProfileQuery.isError && (
+                  <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm text-red-700">
+                      Не удалось загрузить анкету наставляемого.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => void pendingMenteeProfileQuery.refetch()}
+                      className="mt-2 text-sm font-medium text-[#457B9D] hover:underline"
+                    >
+                      Повторить загрузку
+                    </button>
+                  </div>
+                )}
+
+                {pendingMenteeProfileQuery.data && (
+                  <div className="mt-5 space-y-5">
+                    {(() => {
+                      const profile = pendingMenteeProfileQuery.data;
+
+                      return (
+                        <>
+                          <section className="rounded-xl border border-slate-200 bg-white p-5">
+                            <h3 className="font-semibold text-[#1D3557]">
+                              Основная информация
+                            </h3>
+
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <p className="text-xs text-slate-500">ФИО</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">
+                                  {[
+                                    profile.lastName,
+                                    profile.firstName,
+                                    profile.middleName,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">
+                                  Дата рождения
+                                </p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">
+                                  {profile.birthDate
+                                    ? formatDate(profile.birthDate)
+                                    : "Не указана"}
+                                </p>
+                              </div>
+                            </div>
+                          </section>
+
+                          <section className="rounded-xl border border-slate-200 bg-white p-5">
+                            <h3 className="font-semibold text-[#1D3557]">
+                              Организационная принадлежность
+                            </h3>
+
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <p className="text-xs text-slate-500">Регион</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">
+                                  {profile.regionName ?? "Не указан"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">МСУ</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">
+                                  {profile.msuName ?? "Не указано"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs text-slate-500">
+                                  Образовательная организация
+                                </p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">
+                                  {profile.educationalOrganizationName ??
+                                    "Не указана"}
+                                </p>
+                              </div>
+                            </div>
+                          </section>
+
+                          <section className="rounded-xl border border-slate-200 bg-white p-5">
+                            <h3 className="font-semibold text-[#1D3557]">
+                              Профильные поля
+                            </h3>
+
+                            <ProfileValuesList
+                              items={profile.profileValues}
+                              getValue={formatProfileValue}
+                              emptyMessage="Наставляемый пока не заполнил профильные поля."
+                            />
+                          </section>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         )}
 
         {section === "mentees" && (
