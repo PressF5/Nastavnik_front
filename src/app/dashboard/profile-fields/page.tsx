@@ -83,6 +83,7 @@ type UpdateProfileMatchingRuleRequest = {
 };
 
 type CreateOption = {
+  id?: number;
   value: string;
   label: string;
   active: boolean;
@@ -383,6 +384,7 @@ export default function ProfileFieldsPage() {
 
   function handleEdit(field: ProfileField) {
     setEditingFieldId(field.id);
+    setShowCreateForm(false);
     setEditingVersion(field.version);
 
     setName(field.name);
@@ -406,6 +408,7 @@ export default function ProfileFieldsPage() {
     setOptions(
       field.options.length > 0
         ? field.options.map((option) => ({
+            id: option.id,
             value: option.value,
             label: option.label,
             active: option.active,
@@ -712,6 +715,11 @@ export default function ProfileFieldsPage() {
                   Значение используется системой, название отображается
                   пользователю.
                 </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Значение существующего варианта нельзя изменить, поскольку оно
+                  используется для хранения ответов. Чтобы изменить вариант,
+                  создай новый и деактивируй старый.
+                </p>
               </div>
 
               <button
@@ -750,7 +758,7 @@ export default function ProfileFieldsPage() {
                     onChange={(event) =>
                       updateOption(index, "value", event.target.value)
                     }
-                    disabled={!option.active}
+                    disabled={!option.active || option.id !== undefined}
                     maxLength={255}
                     placeholder="Значение, например: higher"
                     className={inputClass}
