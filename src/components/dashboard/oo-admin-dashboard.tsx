@@ -200,6 +200,8 @@ function auditActionLabel(action: string) {
       return "Наставник принял заявку";
     case "REQUEST_REJECTED":
       return "Наставник отклонил заявку";
+    case "AUTO_REJECTED_LIMIT_REACHED":
+      return "Заявка автоматически отклонена: достигнут лимит наставника";
     case "MENTORSHIP_ENDED":
       return "Наставничество завершено";
     default:
