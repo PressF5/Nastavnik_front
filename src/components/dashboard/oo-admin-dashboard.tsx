@@ -173,7 +173,7 @@ function mentorshipStatusLabel(status: MentorshipAssignment["status"]) {
     case "ACCEPTED":
       return "Действует";
     case "REJECTED":
-      return "Отклонено наставником";
+      return "Заявка отклонена";
     case "ENDED":
       return "Завершено";
   }
