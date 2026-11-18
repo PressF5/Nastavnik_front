@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { UserProfileDialog } from "@/components/dashboard/user-profile-dialog";
 
 type AccountStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 type BlockAction = "block" | "unblock";
@@ -147,6 +148,9 @@ export function UserAccountCard({
           </button>
         </div>
       )}
+      <div className="mt-5 border-t border-slate-100 pt-4">
+        <UserProfileDialog userId={user.id} />
+      </div>
     </article>
   );
 }
