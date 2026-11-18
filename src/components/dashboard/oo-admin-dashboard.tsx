@@ -444,9 +444,6 @@ export function OoAdminDashboard() {
       await Promise.all([
         invalidateDashboard(),
         queryClient.invalidateQueries({
-          queryKey: ["oo-admin", user?.id, "available-mentees"],
-        }),
-        queryClient.invalidateQueries({
           queryKey: ["oo-admin", user?.id, "mentor-candidates"],
         }),
       ]);

@@ -307,11 +307,22 @@ export function MentorDashboard() {
       ),
 
     onSuccess: async (_, variables) => {
-      toast.success(
-        variables.request.decision === "ACCEPT"
-          ? "Предложение принято."
-          : "Предложение отклонено.",
-      );
+      const willReachLimit =
+        variables.request.decision === "ACCEPT" && mentees.length === 2;
+
+      if (willReachLimit) {
+        toast.success("Предложение принято.", {
+          description:
+            "Вы достигли лимита в три наставляемых. Остальные ожидающие предложения автоматически отклонены.",
+          duration: 6000,
+        });
+      } else {
+        toast.success(
+          variables.request.decision === "ACCEPT"
+            ? "Предложение принято."
+            : "Предложение отклонено.",
+        );
+      }
 
       setSelectedRequestId(null);
       await invalidateDashboard();
