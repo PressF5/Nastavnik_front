@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog } from "radix-ui";
-import { CalendarDays, LoaderCircle, Mail, UserRound, X } from "lucide-react";
+import { LoaderCircle, Mail, UserRound, X } from "lucide-react";
 
 import { apiFetch } from "@/lib/api-client";
 
@@ -70,6 +70,12 @@ const statusLabels: Record<string, string> = {
 
 function formatDate(value: string | null) {
   if (!value) return "Не указана";
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (match) {
+    return `${match[3]}.${match[2]}.${match[1]}`;
+  }
 
   return new Intl.DateTimeFormat("ru-RU", {
     dateStyle: "medium",
