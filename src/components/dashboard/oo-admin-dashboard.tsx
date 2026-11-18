@@ -449,10 +449,19 @@ export function OoAdminDashboard() {
       ]);
     },
 
-    onError: (error) => {
+    onError: async (error) => {
       toast.error("Не удалось назначить наставника", {
         description: errorMessage(error),
       });
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["oo-admin", user?.id, "available-mentees"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["oo-admin", user?.id, "mentor-candidates"],
+        }),
+      ]);
     },
   });
 
