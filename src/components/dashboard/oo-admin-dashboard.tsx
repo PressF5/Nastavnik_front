@@ -368,6 +368,9 @@ export function OoAdminDashboard() {
       queryClient.invalidateQueries({
         queryKey: ["oo-admin", user?.id, "mentorship-assignments"],
       }),
+      queryClient.invalidateQueries({
+        queryKey: ["oo-admin", user?.id, "available-mentees"],
+      }),
     ]);
   };
 
