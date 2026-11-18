@@ -150,7 +150,7 @@ export default function ProfilePage() {
   const isProfileRole = user?.role === "MENTOR" || user?.role === "MENTEE";
 
   const profileQuery = useQuery({
-    queryKey: ["profile", "my-form"],
+    queryKey: ["profile", "my-form", user?.id],
     queryFn: () => apiFetch<ProfileFormField[]>("/api/profile-values/my-form"),
     enabled: isInitialized && Boolean(user) && isProfileRole,
   });
@@ -162,10 +162,14 @@ export default function ProfilePage() {
     : "";
 
   // Инициализируем форму значениями, полученными с сервера.
-  const isFormInitialized = useRef(false);
+  const initializedUserId = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!profileQuery.data || isFormInitialized.current) {
+    if (!profileQuery.data || !user?.id) {
+      return;
+    }
+
+    if (initializedUserId.current === user.id) {
       return;
     }
 
@@ -176,8 +180,8 @@ export default function ProfilePage() {
     }
 
     setValues(initialValues);
-    isFormInitialized.current = true;
-  }, [profileQuery.data]);
+    initializedUserId.current = user.id;
+  }, [profileQuery.data, user?.id]);
 
   function updateValue(fieldId: number, value: FieldValue) {
     setValues((previous) => ({
