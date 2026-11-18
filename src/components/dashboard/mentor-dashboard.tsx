@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   UserRound,
 } from "lucide-react";
+import { Dialog } from "radix-ui";
 import { toast } from "sonner";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
@@ -696,177 +697,194 @@ export function MentorDashboard() {
           </section>
         )}
 
-        {section === "mentees" && selectedMenteeId !== null && (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-[#1D3557]">
-                  Анкета наставляемого
-                </h2>
+        {section === "mentees" && (
+          <Dialog.Root
+            open={selectedMenteeId !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedMenteeId(null);
+              }
+            }}
+          >
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Личная информация и заполненные профильные поля.
-                </p>
-              </div>
+              <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-200 bg-[#F8F9FA] p-5 shadow-2xl sm:p-6">
+                <section>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <Dialog.Title className="text-lg font-semibold text-[#1D3557]">
+                        Анкета наставляемого
+                      </Dialog.Title>
 
-              <button
-                type="button"
-                onClick={() => setSelectedMenteeId(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Закрыть
-              </button>
-            </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Личная информация и заполненные профильные поля.
+                      </p>
+                    </div>
 
-            {menteeProfileQuery.isPending && (
-              <p className="mt-5 text-sm text-slate-500">Загружаем анкету...</p>
-            )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMenteeId(null)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Закрыть
+                    </button>
+                  </div>
 
-            {menteeProfileQuery.isError && (
-              <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
-                <p className="text-sm text-red-700">
-                  Не удалось загрузить анкету наставляемого.
-                </p>
+                  {menteeProfileQuery.isPending && (
+                    <p className="mt-5 text-sm text-slate-500">
+                      Загружаем анкету...
+                    </p>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={() => void menteeProfileQuery.refetch()}
-                  className="mt-2 text-sm font-medium text-[#457B9D] hover:underline"
-                >
-                  Повторить загрузку
-                </button>
-              </div>
-            )}
+                  {menteeProfileQuery.isError && (
+                    <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">
+                        Не удалось загрузить анкету наставляемого.
+                      </p>
 
-            {menteeProfileQuery.data && (
-              <div className="mt-5 space-y-6">
-                {(() => {
-                  const profile = menteeProfileQuery.data;
+                      <button
+                        type="button"
+                        onClick={() => void menteeProfileQuery.refetch()}
+                        className="mt-2 text-sm font-medium text-[#457B9D] hover:underline"
+                      >
+                        Повторить загрузку
+                      </button>
+                    </div>
+                  )}
 
-                  return (
-                    <>
-                      <div>
-                        <h3 className="font-semibold text-[#1D3557]">
-                          Основная информация
-                        </h3>
+                  {menteeProfileQuery.data && (
+                    <div className="mt-5 space-y-6">
+                      {(() => {
+                        const profile = menteeProfileQuery.data;
 
-                        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          <div>
-                            <p className="text-xs text-slate-500">ФИО</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {[
-                                profile.lastName,
-                                profile.firstName,
-                                profile.middleName,
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            </p>
-                          </div>
+                        return (
+                          <>
+                            <div>
+                              <h3 className="font-semibold text-[#1D3557]">
+                                Основная информация
+                              </h3>
 
-                          <div>
-                            <p className="text-xs text-slate-500">
-                              Дата рождения
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.birthDate
-                                ? formatDate(profile.birthDate)
-                                : "Не указана"}
-                            </p>
-                          </div>
+                              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <div>
+                                  <p className="text-xs text-slate-500">ФИО</p>
+                                  <p className="mt-1 text-sm font-medium text-slate-800">
+                                    {[
+                                      profile.lastName,
+                                      profile.firstName,
+                                      profile.middleName,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" ")}
+                                  </p>
+                                </div>
 
-                          <div>
-                            <p className="text-xs text-slate-500">
-                              Учебный год
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.mentorship.academicYearName}
-                            </p>
-                          </div>
+                                <div>
+                                  <p className="text-xs text-slate-500">
+                                    Дата рождения
+                                  </p>
+                                  <p className="mt-1 text-sm font-medium text-slate-800">
+                                    {profile.birthDate
+                                      ? formatDate(profile.birthDate)
+                                      : "Не указана"}
+                                  </p>
+                                </div>
 
-                          <div>
-                            <p className="text-xs text-slate-500">
-                              Начало наставничества
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-800">
-                              {profile.mentorship.startedAt
-                                ? formatDate(profile.mentorship.startedAt)
-                                : "—"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                                <div>
+                                  <p className="text-xs text-slate-500">
+                                    Учебный год
+                                  </p>
+                                  <p className="mt-1 text-sm font-medium text-slate-800">
+                                    {profile.mentorship.academicYearName}
+                                  </p>
+                                </div>
 
-                      <div className="border-t border-slate-200 pt-5">
-                        <h3 className="font-semibold text-[#1D3557]">
-                          Организационная принадлежность
-                        </h3>
-
-                        <div className="mt-4 grid gap-3 md:grid-cols-3">
-                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
-                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                              Регион
-                            </p>
-                            <p className="mt-2 font-semibold text-[#1D3557]">
-                              {profile.regionName ?? "Не указан"}
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
-                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                              Муниципальное образование
-                            </p>
-                            <p className="mt-2 font-semibold text-[#1D3557]">
-                              {profile.msuName ?? "Не указано"}
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
-                            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                              Образовательная организация
-                            </p>
-                            <p className="mt-2 font-semibold text-[#1D3557]">
-                              {profile.educationalOrganizationName ??
-                                "Не указана"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-slate-200 pt-5">
-                        <h3 className="font-semibold text-[#1D3557]">
-                          Профильные поля
-                        </h3>
-
-                        {profile.profileValues.length === 0 ? (
-                          <p className="mt-3 text-sm text-slate-500">
-                            Наставляемый пока не заполнил профильные поля.
-                          </p>
-                        ) : (
-                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                            {profile.profileValues.map((value) => (
-                              <div
-                                key={value.id}
-                                className="rounded-lg border border-slate-200 p-4"
-                              >
-                                <p className="text-xs font-medium text-slate-500">
-                                  {value.profileFieldName}
-                                </p>
-
-                                <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
-                                  {formatProfileValue(value)}
-                                </p>
+                                <div>
+                                  <p className="text-xs text-slate-500">
+                                    Начало наставничества
+                                  </p>
+                                  <p className="mt-1 text-sm font-medium text-slate-800">
+                                    {profile.mentorship.startedAt
+                                      ? formatDate(profile.mentorship.startedAt)
+                                      : "—"}
+                                  </p>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </section>
+                            </div>
+
+                            <div className="border-t border-slate-200 pt-5">
+                              <h3 className="font-semibold text-[#1D3557]">
+                                Организационная принадлежность
+                              </h3>
+
+                              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                                <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    Регион
+                                  </p>
+                                  <p className="mt-2 font-semibold text-[#1D3557]">
+                                    {profile.regionName ?? "Не указан"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    Муниципальное образование
+                                  </p>
+                                  <p className="mt-2 font-semibold text-[#1D3557]">
+                                    {profile.msuName ?? "Не указано"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-[#F8F9FA] p-4">
+                                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    Образовательная организация
+                                  </p>
+                                  <p className="mt-2 font-semibold text-[#1D3557]">
+                                    {profile.educationalOrganizationName ??
+                                      "Не указана"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-slate-200 pt-5">
+                              <h3 className="font-semibold text-[#1D3557]">
+                                Профильные поля
+                              </h3>
+
+                              {profile.profileValues.length === 0 ? (
+                                <p className="mt-3 text-sm text-slate-500">
+                                  Наставляемый пока не заполнил профильные поля.
+                                </p>
+                              ) : (
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                  {profile.profileValues.map((value) => (
+                                    <div
+                                      key={value.id}
+                                      className="rounded-lg border border-slate-200 p-4"
+                                    >
+                                      <p className="text-xs font-medium text-slate-500">
+                                        {value.profileFieldName}
+                                      </p>
+
+                                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
+                                        {formatProfileValue(value)}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </section>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         )}
 
         {endingMentorshipId !== null && (

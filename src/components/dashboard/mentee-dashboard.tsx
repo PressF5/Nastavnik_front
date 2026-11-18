@@ -2,12 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
-  UserRound,
-  Building2,
-  CalendarDays,
-  Users,
-} from "lucide-react";
+import { UserRound, Building2, CalendarDays, Users } from "lucide-react";
+import { Dialog } from "radix-ui";
 
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -436,144 +432,160 @@ export function MenteeDashboard() {
                 <div className="border-t border-slate-100 p-5 sm:px-6">
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowMentorProfile((previous) => !previous)
-                    }
+                    onClick={() => setShowMentorProfile(true)}
                     className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27476f]"
                   >
                     <UserRound size={17} />
-                    {showMentorProfile
-                      ? "Скрыть анкету наставника"
-                      : "Посмотреть анкету наставника"}
+                    Посмотреть анкету наставника
                   </button>
                 </div>
               </article>
             )}
-            {showMentorProfile && mentorshipQuery.data && (
-              <section className="space-y-5">
-                {mentorProfileQuery.isPending && (
-                  <div className="rounded-xl border border-slate-200 bg-white p-6">
-                    <p className="text-sm text-slate-500">
-                      Загружаем анкету наставника...
-                    </p>
+            <Dialog.Root
+              open={showMentorProfile && Boolean(mentorshipQuery.data)}
+              onOpenChange={setShowMentorProfile}
+            >
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+
+                <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-slate-200 bg-[#F8F9FA] p-5 shadow-2xl sm:p-6">
+                  <div className="mb-5">
+                    <Dialog.Title className="text-lg font-semibold text-[#1D3557]">
+                      Анкета наставника
+                    </Dialog.Title>
+
+                    <Dialog.Description className="mt-1 text-sm text-slate-500">
+                      Персональная информация и заполненные профильные поля.
+                    </Dialog.Description>
                   </div>
-                )}
 
-                {mentorProfileQuery.isError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 p-5">
-                    <p className="font-medium text-red-800">
-                      Не удалось загрузить анкету наставника.
-                    </p>
+                  <section className="space-y-5">
+                    {mentorProfileQuery.isPending && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-6">
+                        <p className="text-sm text-slate-500">
+                          Загружаем анкету наставника...
+                        </p>
+                      </div>
+                    )}
 
-                    <button
-                      type="button"
-                      onClick={() => void mentorProfileQuery.refetch()}
-                      className="mt-3 text-sm font-medium text-[#457B9D] hover:underline"
-                    >
-                      Повторить загрузку
-                    </button>
-                  </div>
-                )}
+                    {mentorProfileQuery.isError && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+                        <p className="font-medium text-red-800">
+                          Не удалось загрузить анкету наставника.
+                        </p>
 
-                {mentorProfileQuery.data && (
-                  <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-100 p-5 sm:p-6">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        Профиль наставника
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() => void mentorProfileQuery.refetch()}
+                          className="mt-3 text-sm font-medium text-[#457B9D] hover:underline"
+                        >
+                          Повторить загрузку
+                        </button>
+                      </div>
+                    )}
 
-                      <h2 className="mt-2 text-xl font-semibold text-[#1D3557]">
-                        {[
-                          mentorProfileQuery.data.lastName,
-                          mentorProfileQuery.data.firstName,
-                          mentorProfileQuery.data.middleName,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </h2>
+                    {mentorProfileQuery.data && (
+                      <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-100 p-5 sm:p-6">
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Профиль наставника
+                          </p>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        Персональная информация и профессиональная анкета
-                      </p>
-                    </div>
+                          <h2 className="mt-2 text-xl font-semibold text-[#1D3557]">
+                            {[
+                              mentorProfileQuery.data.lastName,
+                              mentorProfileQuery.data.firstName,
+                              mentorProfileQuery.data.middleName,
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                          </h2>
 
-                    <div className="space-y-5 p-5 sm:p-6">
-                      <section>
-                        <h3 className="mb-3 font-semibold text-[#1D3557]">
-                          Организационная принадлежность
-                        </h3>
-
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                          {[
-                            {
-                              title: "Регион",
-                              value: mentorProfileQuery.data.regionName,
-                            },
-                            {
-                              title: "Муниципальное образование",
-                              value: mentorProfileQuery.data.msuName,
-                            },
-                            {
-                              title: "Образовательная организация",
-                              value:
-                                mentorProfileQuery.data
-                                  .educationalOrganizationName,
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.title}
-                              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-                            >
-                              <p className="text-xs text-slate-500">
-                                {item.title}
-                              </p>
-
-                              <p className="mt-2 text-sm font-medium text-slate-800">
-                                {item.value || "Не указано"}
-                              </p>
-                            </div>
-                          ))}
+                          <p className="mt-1 text-sm text-slate-500">
+                            Персональная информация и профессиональная анкета
+                          </p>
                         </div>
-                      </section>
 
-                      <section>
-                        <h3 className="mb-3 font-semibold text-[#1D3557]">
-                          Анкета наставника
-                        </h3>
+                        <div className="space-y-5 p-5 sm:p-6">
+                          <section>
+                            <h3 className="mb-3 font-semibold text-[#1D3557]">
+                              Организационная принадлежность
+                            </h3>
 
-                        {mentorProfileQuery.data.profileValues.length === 0 ? (
-                          <div className="rounded-lg border border-slate-200 p-5">
-                            <p className="text-sm text-slate-500">
-                              Наставник пока не заполнил дополнительные поля
-                              анкеты.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {mentorProfileQuery.data.profileValues.map(
-                              (item) => (
+                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                              {[
+                                {
+                                  title: "Регион",
+                                  value: mentorProfileQuery.data.regionName,
+                                },
+                                {
+                                  title: "Муниципальное образование",
+                                  value: mentorProfileQuery.data.msuName,
+                                },
+                                {
+                                  title: "Образовательная организация",
+                                  value:
+                                    mentorProfileQuery.data
+                                      .educationalOrganizationName,
+                                },
+                              ].map((item) => (
                                 <div
-                                  key={item.profileFieldId}
-                                  className="rounded-lg border border-slate-200 p-4"
+                                  key={item.title}
+                                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                                 >
-                                  <p className="text-xs font-medium text-slate-500">
-                                    {item.profileFieldName}
+                                  <p className="text-xs text-slate-500">
+                                    {item.title}
                                   </p>
 
-                                  <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-800">
-                                    {formatProfileValue(item)}
+                                  <p className="mt-2 text-sm font-medium text-slate-800">
+                                    {item.value || "Не указано"}
                                   </p>
                                 </div>
-                              ),
+                              ))}
+                            </div>
+                          </section>
+
+                          <section>
+                            <h3 className="mb-3 font-semibold text-[#1D3557]">
+                              Анкета наставника
+                            </h3>
+
+                            {mentorProfileQuery.data.profileValues.length ===
+                            0 ? (
+                              <div className="rounded-lg border border-slate-200 p-5">
+                                <p className="text-sm text-slate-500">
+                                  Наставник пока не заполнил дополнительные поля
+                                  анкеты.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {mentorProfileQuery.data.profileValues.map(
+                                  (item) => (
+                                    <div
+                                      key={item.profileFieldId}
+                                      className="rounded-lg border border-slate-200 p-4"
+                                    >
+                                      <p className="text-xs font-medium text-slate-500">
+                                        {item.profileFieldName}
+                                      </p>
+
+                                      <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-800">
+                                        {formatProfileValue(item)}
+                                      </p>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
-                      </section>
-                    </div>
-                  </article>
-                )}
-              </section>
-            )}
+                          </section>
+                        </div>
+                      </article>
+                    )}
+                  </section>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
           </section>
         )}
       </div>
