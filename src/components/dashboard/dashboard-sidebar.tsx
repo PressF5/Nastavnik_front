@@ -205,25 +205,23 @@ export function DashboardSidebar({
         ].join(" ")}
       >
         <div className="flex min-h-20 items-center justify-between border-b border-slate-200 px-4">
-          {!collapsed && (
-            <div className={collapsed ? "lg:hidden" : ""}>
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#457B9D]">
-                НАСТАВНИК+
-              </p>
+          <div className={collapsed ? "lg:hidden" : ""}>
+            <p className="text-xs font-semibold tracking-[0.18em] text-[#457B9D]">
+              НАСТАВНИК+
+            </p>
 
-              <p className="mt-1 text-sm font-semibold text-[#1D3557]">
-                {user?.role === "MSU_ADMIN"
-                  ? "Управление МСУ"
-                  : user?.role === "OO_ADMIN"
-                    ? "Управление ОО"
-                    : user?.role === "MENTOR"
-                      ? "Кабинет наставника"
-                      : user?.role === "MENTEE"
-                        ? "Кабинет наставляемого"
-                        : "Управление регионом"}
-              </p>
-            </div>
-          )}
+            <p className="mt-1 text-sm font-semibold text-[#1D3557]">
+              {user?.role === "MSU_ADMIN"
+                ? "Управление МСУ"
+                : user?.role === "OO_ADMIN"
+                  ? "Управление ОО"
+                  : user?.role === "MENTOR"
+                    ? "Кабинет наставника"
+                    : user?.role === "MENTEE"
+                      ? "Кабинет наставляемого"
+                      : "Управление регионом"}
+            </p>
+          </div>
 
           <button
             type="button"
