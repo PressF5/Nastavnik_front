@@ -24,6 +24,7 @@ import {
   OrganizationHierarchyCard,
   type OrganizationContext,
 } from "@/components/dashboard/organization-hierarchy-card";
+import { UserProfileDialog } from "@/components/dashboard/user-profile-dialog";
 
 import { useState } from "react";
 
@@ -1005,6 +1006,11 @@ export function OoAdminDashboard() {
                             </p>
                           </div>
                         </div>
+
+                        <UserProfileDialog
+                          userId={mentor.mentorId}
+                          profileEndpoint={`/api/admin/mentees/${selectedMenteeId}/mentors/${mentor.mentorId}/profile`}
+                        />
 
                         <button
                           type="button"

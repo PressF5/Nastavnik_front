@@ -53,6 +53,7 @@ type UserProfile = {
 
 type UserProfileDialogProps = {
   userId: number;
+  profileEndpoint?: string;
 };
 
 const roleLabels: Record<string, string> = {
@@ -121,12 +122,21 @@ function getProfileValue(field: ProfileValue): string {
   }
 }
 
-export function UserProfileDialog({ userId }: UserProfileDialogProps) {
+export function UserProfileDialog({
+  userId,
+  profileEndpoint,
+}: UserProfileDialogProps) {
   const [open, setOpen] = useState(false);
 
   const profileQuery = useQuery({
-    queryKey: ["admin", "users", "profile", userId],
-    queryFn: () => apiFetch<UserProfile>(`/api/admin/users/${userId}/profile`),
+    queryKey: [
+      "user-profile",
+      profileEndpoint ?? `/api/admin/users/${userId}/profile`,
+    ],
+    queryFn: () =>
+      apiFetch<UserProfile>(
+        profileEndpoint ?? `/api/admin/users/${userId}/profile`,
+      ),
     enabled: open && userId > 0,
   });
 
