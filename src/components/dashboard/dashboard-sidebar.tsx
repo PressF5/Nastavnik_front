@@ -210,6 +210,7 @@ export function DashboardSidebar({
               <p className="text-xs font-semibold tracking-[0.18em] text-[#457B9D]">
                 НАСТАВНИК+
               </p>
+
               <p className="mt-1 text-sm font-semibold text-[#1D3557]">
                 {user?.role === "MSU_ADMIN"
                   ? "Управление МСУ"
