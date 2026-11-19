@@ -955,9 +955,9 @@ export function OoAdminDashboard() {
                     {mentorCandidatesQuery.data?.map((mentor) => (
                       <article
                         key={mentor.mentorId}
-                        className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                        className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                       >
-                        <div>
+                        <div className="flex-1">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <h4 className="font-semibold text-[#1D3557]">
@@ -1007,23 +1007,25 @@ export function OoAdminDashboard() {
                           </div>
                         </div>
 
-                        <UserProfileDialog
-                          userId={mentor.mentorId}
-                          profileEndpoint={`/api/admin/mentees/${selectedMenteeId}/mentors/${mentor.mentorId}/profile`}
-                        />
+                        <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
+                          <UserProfileDialog
+                            userId={mentor.mentorId}
+                            profileEndpoint={`/api/admin/mentees/${selectedMenteeId}/mentors/${mentor.mentorId}/profile`}
+                          />
 
-                        <button
-                          type="button"
-                          disabled={createMentorshipMutation.isPending}
-                          onClick={() =>
-                            createMentorshipMutation.mutate(mentor.mentorId)
-                          }
-                          className={`${primaryButton} mt-5 w-full`}
-                        >
-                          {createMentorshipMutation.isPending
-                            ? "Отправляем заявку..."
-                            : "Отправить заявку"}
-                        </button>
+                          <button
+                            type="button"
+                            disabled={createMentorshipMutation.isPending}
+                            onClick={() =>
+                              createMentorshipMutation.mutate(mentor.mentorId)
+                            }
+                            className={`${primaryButton} mt-5 w-full`}
+                          >
+                            {createMentorshipMutation.isPending
+                              ? "Отправляем заявку..."
+                              : "Отправить заявку"}
+                          </button>
+                        </div>
                       </article>
                     ))}
                   </div>
