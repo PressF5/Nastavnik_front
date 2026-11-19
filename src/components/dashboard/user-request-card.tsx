@@ -108,29 +108,32 @@ export function UserRequestCard({
       </div>
 
       {user.accountStatus === "PENDING" && (
-        <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onApprove}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Подтвердить
-          </button>
+        <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+          {user.accountStatus === "PENDING" && (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={onApprove}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Подтвердить
+              </button>
 
-          <button
-            type="button"
-            disabled={pending}
-            onClick={handleReject}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Отклонить
-          </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={handleReject}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Отклонить
+              </button>
+            </div>
+          )}
+
+          <UserProfileDialog userId={user.id} />
         </div>
       )}
-      <div className="mt-5 border-t border-slate-100 pt-4">
-        <UserProfileDialog userId={user.id} />
-      </div>
     </article>
   );
 }
