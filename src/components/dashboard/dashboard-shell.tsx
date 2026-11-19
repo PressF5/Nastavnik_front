@@ -77,16 +77,10 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
           <button
             type="button"
-            onClick={() => {
-              if (window.innerWidth < 1024) {
-                setMobileOpen(true);
-              } else {
-                setCollapsed(!collapsed);
-              }
-            }}
+            onClick={() => setMobileOpen(true)}
             aria-label="Открыть или свернуть меню"
             title="Открыть или свернуть меню"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
+            className="inline-flex lg:hidden shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
           >
             {collapsed ? <PanelLeft size={20} /> : <Menu size={20} />}
           </button>

@@ -206,7 +206,7 @@ export function DashboardSidebar({
       >
         <div className="flex min-h-20 items-center justify-between border-b border-slate-200 px-4">
           {!collapsed && (
-            <div>
+            <div className={collapsed ? "lg:hidden" : ""}>
               <p className="text-xs font-semibold tracking-[0.18em] text-[#457B9D]">
                 НАСТАВНИК+
               </p>
