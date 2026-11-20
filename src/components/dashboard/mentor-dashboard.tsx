@@ -43,6 +43,14 @@ type Mentorship = {
   menteeEducationalOrganizationName: string | null;
 };
 
+type AcademicYear = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED";
+};
+
 type MenteeProfile = {
   id: number;
   firstName: string;
@@ -260,6 +268,9 @@ export function MentorDashboard() {
   );
 
   const [endReason, setEndReason] = useState("");
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<
+    number | null
+  >(null);
 
   const router = useRouter();
 
@@ -269,23 +280,63 @@ export function MentorDashboard() {
     enabled: user?.role === "MENTOR",
   });
 
-  const requestsQuery = useQuery({
-    queryKey: ["mentor", user?.id, "requests"],
-    queryFn: () => apiFetch<Mentorship[]>("/api/mentor/mentorship-assignments"),
+  const academicYearsQuery = useQuery({
+    queryKey: ["academic-years", "available", user?.id],
+    queryFn: () => apiFetch<AcademicYear[]>("/api/academic-years/available"),
     enabled: user?.role === "MENTOR",
+  });
+
+  // Если пользователь ещё не выбрал год,
+  // по умолчанию используем первый год из отсортированного списка.
+  const academicYears = academicYearsQuery.data ?? [];
+
+  const activeAcademicYearId =
+    selectedAcademicYearId ?? academicYears[0]?.id ?? null;
+
+  const selectedAcademicYear = academicYears.find(
+    (year) => year.id === activeAcademicYearId,
+  );
+
+  const requestsQuery = useQuery({
+    queryKey: ["mentor", user?.id, "requests", activeAcademicYearId],
+    queryFn: () =>
+      apiFetch<Mentorship[]>("/api/mentor/mentorship-assignments", {
+        params: {
+          academicYearId: activeAcademicYearId!,
+        },
+      }),
+    enabled: user?.role === "MENTOR" && activeAcademicYearId !== null,
   });
 
   const menteesQuery = useQuery({
-    queryKey: ["mentor", user?.id, "mentees"],
-    queryFn: () => apiFetch<Mentorship[]>("/api/mentor/mentees"),
-    enabled: user?.role === "MENTOR",
+    queryKey: ["mentor", user?.id, "mentees", activeAcademicYearId],
+    queryFn: () =>
+      apiFetch<Mentorship[]>("/api/mentor/mentees", {
+        params: {
+          academicYearId: activeAcademicYearId!,
+        },
+      }),
+    enabled: user?.role === "MENTOR" && activeAcademicYearId !== null,
   });
 
   const menteeProfileQuery = useQuery({
-    queryKey: ["mentor", user?.id, "mentee-profile", selectedMenteeId],
+    queryKey: [
+      "mentor",
+      user?.id,
+      "mentee-profile",
+      selectedMenteeId,
+      activeAcademicYearId,
+    ],
     queryFn: () =>
-      apiFetch<MenteeProfile>(`/api/mentor/mentees/${selectedMenteeId}`),
-    enabled: user?.role === "MENTOR" && selectedMenteeId !== null,
+      apiFetch<MenteeProfile>(`/api/mentor/mentees/${selectedMenteeId}`, {
+        params: {
+          academicYearId: activeAcademicYearId!,
+        },
+      }),
+    enabled:
+      user?.role === "MENTOR" &&
+      selectedMenteeId !== null &&
+      activeAcademicYearId !== null,
   });
 
   const pendingMenteeProfileQuery = useQuery({
@@ -305,10 +356,10 @@ export function MentorDashboard() {
   const invalidateDashboard = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: ["mentor", user?.id, "requests"],
+        queryKey: ["mentor", user?.id, "requests", activeAcademicYearId],
       }),
       queryClient.invalidateQueries({
-        queryKey: ["mentor", user?.id, "mentees"],
+        queryKey: ["mentor", user?.id, "mentees", activeAcademicYearId],
       }),
     ]);
   };
@@ -434,6 +485,63 @@ export function MentorDashboard() {
             </button>
           }
         />
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-[#1D3557]">Учебный год</h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Выберите год, данные которого хотите просмотреть.
+              </p>
+            </div>
+
+            {academicYearsQuery.isPending ? (
+              <p className="text-sm text-slate-500">
+                Загружаем учебные годы...
+              </p>
+            ) : academicYearsQuery.isError ? (
+              <button
+                type="button"
+                onClick={() => void academicYearsQuery.refetch()}
+                className="text-sm font-medium text-red-600 hover:underline"
+              >
+                Не удалось загрузить годы. Повторить
+              </button>
+            ) : academicYears.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Доступных учебных годов пока нет.
+              </p>
+            ) : (
+              <select
+                value={activeAcademicYearId ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedAcademicYearId(value ? Number(value) : null);
+                  setSelectedMenteeId(null);
+                  setSelectedRequestId(null);
+                }}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#457B9D] sm:w-64"
+              >
+                {academicYears.map((year) => (
+                  <option key={year.id} value={year.id}>
+                    {year.name}
+                    {year.status === "ACTIVE" ? " (текущий)" : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {selectedAcademicYear &&
+            selectedAcademicYear.status === "COMPLETED" && (
+              <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                Вы просматриваете завершённый учебный год. Новые назначения
+                создавать нельзя, но просмотр и обработка существующих заявок
+                доступны.
+              </p>
+            )}
+        </section>
 
         {section === "overview" && (
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -576,7 +684,10 @@ export function MentorDashboard() {
                       </button>
                       <button
                         type="button"
-                        disabled={decisionMutation.isPending}
+                        disabled={
+                          decisionMutation.isPending ||
+                          selectedAcademicYear?.status !== "ACTIVE"
+                        }
                         onClick={() =>
                           decisionMutation.mutate({
                             id: item.id,
