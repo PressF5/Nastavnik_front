@@ -49,6 +49,7 @@ type EducationalOrganization = {
 type AcademicYear = {
   id: number;
   name: string;
+  published: boolean;
   startDate: string;
   endDate: string;
   status: "PLANNED" | "ACTIVE" | "COMPLETED";
@@ -563,6 +564,58 @@ export default function DashboardPage() {
     },
   });
 
+  const publishAcademicYearMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<AcademicYear>(`/api/admin/academic-years/${id}/publish`, {
+        method: "PUT",
+      }),
+
+    onSuccess: async () => {
+      toast.success("Учебный год опубликован.");
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "academic-years"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось опубликовать учебный год", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const deleteAcademicYearMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/admin/academic-years/${id}`, {
+        method: "DELETE",
+      }),
+
+    onSuccess: async () => {
+      toast.success("Учебный год удалён.");
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "academic-years"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось удалить учебный год", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  function confirmDeleteAcademicYear(year: AcademicYear) {
+    const confirmed = window.confirm(
+      `Удалить учебный год «${year.name}»? Если к нему привязаны наставнические пары или подтверждённое участие наставников, удалить его нельзя.`,
+    );
+
+    if (confirmed) {
+      deleteAcademicYearMutation.mutate(year.id);
+    }
+  }
+
   function handleCreateAcademicYear(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -993,6 +1046,16 @@ export default function DashboardPage() {
                               >
                                 {academicYearStatusLabel(year.status)}
                               </span>
+
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  year.published
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-amber-50 text-amber-700"
+                                }`}
+                              >
+                                {year.published ? "Опубликован" : "Черновик"}
+                              </span>
                             </div>
 
                             <p className="mt-2 text-sm text-slate-600">
@@ -1002,16 +1065,49 @@ export default function DashboardPage() {
                             </p>
                           </div>
 
-                          {year.status === "PLANNED" && (
-                            <button
-                              type="button"
-                              onClick={() => startEditingAcademicYear(year)}
-                              className={buttonSecondary}
-                            >
-                              <Pencil size={15} />
-                              Изменить
-                            </button>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {year.status === "PLANNED" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditingAcademicYear(year)}
+                                  className={buttonSecondary}
+                                >
+                                  <Pencil size={15} />
+                                  Изменить
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    confirmDeleteAcademicYear(year)
+                                  }
+                                  disabled={
+                                    deleteAcademicYearMutation.isPending
+                                  }
+                                  className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
+                                >
+                                  <Trash2 size={15} />
+                                  Удалить
+                                </button>
+                              </>
+                            )}
+
+                            {!year.published && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  publishAcademicYearMutation.mutate(year.id)
+                                }
+                                disabled={publishAcademicYearMutation.isPending}
+                                className={buttonPrimary}
+                              >
+                                {publishAcademicYearMutation.isPending
+                                  ? "Публикация..."
+                                  : "Опубликовать"}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </article>
