@@ -46,6 +46,20 @@ type EducationalOrganization = {
   msuName: string;
 };
 
+type AcademicYear = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED";
+};
+
+type AcademicYearRequest = {
+  name: string;
+  startDate: string;
+  endDate: string;
+};
+
 type AdminUser = {
   id: number;
   email: string;
@@ -108,6 +122,23 @@ function statusLabel(status: AdminUser["accountStatus"]): string {
   }
 }
 
+function academicYearStatusLabel(status: AcademicYear["status"]) {
+  switch (status) {
+    case "PLANNED":
+      return "Запланирован";
+    case "ACTIVE":
+      return "Текущий";
+    case "COMPLETED":
+      return "Завершён";
+  }
+}
+
+function formatAcademicYearDate(value: string) {
+  const [year, month, day] = value.split("-");
+
+  return `${day}.${month}.${year}`;
+}
+
 function StatusBadge({ status }: { status: AdminUser["accountStatus"] }) {
   const styles = {
     PENDING: "bg-amber-50 text-amber-800 ring-amber-200",
@@ -148,6 +179,20 @@ export default function DashboardPage() {
   const [organizationSearch, setOrganizationSearch] = useState("");
   const [organizationPage, setOrganizationPage] = useState(0);
   const [organizationPageSize, setOrganizationPageSize] = useState(10);
+
+  const [showAcademicYearForm, setShowAcademicYearForm] = useState(false);
+  const [academicYearName, setAcademicYearName] = useState("");
+  const [academicYearStartDate, setAcademicYearStartDate] = useState("");
+  const [academicYearEndDate, setAcademicYearEndDate] = useState("");
+
+  const [editingAcademicYearId, setEditingAcademicYearId] = useState<
+    number | null
+  >(null);
+  const [editingAcademicYearName, setEditingAcademicYearName] = useState("");
+  const [editingAcademicYearStartDate, setEditingAcademicYearStartDate] =
+    useState("");
+  const [editingAcademicYearEndDate, setEditingAcademicYearEndDate] =
+    useState("");
 
   const { section, setSection } = useDashboardShell();
 
@@ -212,6 +257,12 @@ export default function DashboardPage() {
     queryKey: ["organization-context", user?.id],
     queryFn: () =>
       apiFetch<OrganizationContext>("/api/organization-context/current"),
+    enabled: isInitialized && isRegionAdmin,
+  });
+
+  const academicYearsQuery = useQuery({
+    queryKey: ["region-admin", "academic-years"],
+    queryFn: () => apiFetch<AcademicYear[]>("/api/admin/academic-years"),
     enabled: isInitialized && isRegionAdmin,
   });
 
@@ -328,6 +379,9 @@ export default function DashboardPage() {
       }),
       queryClient.invalidateQueries({
         queryKey: ["region-admin", "educational-organizations"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["region-admin", "academic-years"],
       }),
     ]);
   };
@@ -453,6 +507,91 @@ export default function DashboardPage() {
     },
   });
 
+  const createAcademicYearMutation = useMutation({
+    mutationFn: (request: AcademicYearRequest) =>
+      apiFetch<AcademicYear>("/api/admin/academic-years", {
+        method: "POST",
+        body: JSON.stringify(request),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Учебный год создан.");
+
+      setAcademicYearName("");
+      setAcademicYearStartDate("");
+      setAcademicYearEndDate("");
+      setShowAcademicYearForm(false);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "academic-years"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось создать учебный год", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const updateAcademicYearMutation = useMutation({
+    mutationFn: ({
+      id,
+      request,
+    }: {
+      id: number;
+      request: AcademicYearRequest;
+    }) =>
+      apiFetch<AcademicYear>(`/api/admin/academic-years/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(request),
+      }),
+
+    onSuccess: async () => {
+      toast.success("Учебный год обновлён.");
+      setEditingAcademicYearId(null);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["region-admin", "academic-years"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось изменить учебный год", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  function handleCreateAcademicYear(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const name = academicYearName.trim();
+
+    if (!name) {
+      toast.error("Укажи название учебного года.");
+      return;
+    }
+
+    if (academicYearStartDate >= academicYearEndDate) {
+      toast.error("Дата начала должна быть раньше даты окончания.");
+      return;
+    }
+
+    createAcademicYearMutation.mutate({
+      name,
+      startDate: academicYearStartDate,
+      endDate: academicYearEndDate,
+    });
+  }
+
+  function startEditingAcademicYear(year: AcademicYear) {
+    setEditingAcademicYearId(year.id);
+    setEditingAcademicYearName(year.name);
+    setEditingAcademicYearStartDate(year.startDate);
+    setEditingAcademicYearEndDate(year.endDate);
+  }
+
   async function handleCreateMsu(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -556,6 +695,7 @@ export default function DashboardPage() {
     pendingQuery.isFetching ||
     pendingOoAdminsQuery.isFetching ||
     accountsQuery.isFetching ||
+    academicYearsQuery.isFetching ||
     ooAccountsQuery.isFetching;
 
   const organizations = organizationsQuery.data?.content ?? [];
@@ -614,6 +754,274 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+
+        {section === "academic-years" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-[#1D3557]">
+                  Управление учебными годами
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Создание, просмотр и редактирование запланированных учебных
+                  годов.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAcademicYearForm((value) => !value)}
+                className={buttonPrimary}
+              >
+                <Plus size={17} />
+                {showAcademicYearForm ? "Отмена" : "Создать учебный год"}
+              </button>
+            </div>
+
+            {showAcademicYearForm && (
+              <form
+                onSubmit={handleCreateAcademicYear}
+                className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3"
+              >
+                <label className="text-sm font-medium text-slate-700 sm:col-span-3">
+                  Название учебного года
+                  <input
+                    className={inputClass}
+                    type="text"
+                    maxLength={20}
+                    required
+                    value={academicYearName}
+                    onChange={(event) =>
+                      setAcademicYearName(event.target.value)
+                    }
+                    placeholder="Например, 2026–2027"
+                  />
+                </label>
+
+                <label className="text-sm font-medium text-slate-700">
+                  Дата начала
+                  <input
+                    className={inputClass}
+                    type="date"
+                    required
+                    value={academicYearStartDate}
+                    onChange={(event) =>
+                      setAcademicYearStartDate(event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="text-sm font-medium text-slate-700">
+                  Дата окончания
+                  <input
+                    className={inputClass}
+                    type="date"
+                    required
+                    min={academicYearStartDate || undefined}
+                    value={academicYearEndDate}
+                    onChange={(event) =>
+                      setAcademicYearEndDate(event.target.value)
+                    }
+                  />
+                </label>
+
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    disabled={createAcademicYearMutation.isPending}
+                    className={`${buttonPrimary} w-full`}
+                  >
+                    {createAcademicYearMutation.isPending
+                      ? "Создание..."
+                      : "Создать"}
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-500 sm:col-span-3">
+                  Можно создать учебный год задним числом. Он сразу получит
+                  статус «Текущий», если сегодняшняя дата входит в указанный
+                  период. Пересечение с другими учебными годами запрещено.
+                </p>
+              </form>
+            )}
+
+            {academicYearsQuery.isPending ? (
+              <p className="py-10 text-sm text-slate-500">
+                Загружаем учебные годы...
+              </p>
+            ) : academicYearsQuery.isError ? (
+              <div className="py-8">
+                <p role="alert" className="text-sm text-red-700">
+                  Не удалось загрузить учебные годы.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void academicYearsQuery.refetch()}
+                  className={`${buttonSecondary} mt-3`}
+                >
+                  Повторить
+                </button>
+              </div>
+            ) : !academicYearsQuery.data?.length ? (
+              <p className="py-10 text-sm text-slate-500">
+                Учебные годы ещё не созданы.
+              </p>
+            ) : (
+              <div className="mt-6 space-y-3">
+                {academicYearsQuery.data.map((year) => {
+                  const isEditing = editingAcademicYearId === year.id;
+
+                  const statusStyles = {
+                    PLANNED: "bg-blue-50 text-blue-700",
+                    ACTIVE: "bg-emerald-50 text-emerald-700",
+                    COMPLETED: "bg-slate-100 text-slate-600",
+                  };
+
+                  return (
+                    <article
+                      key={year.id}
+                      className="rounded-xl border border-slate-200 p-4"
+                    >
+                      {isEditing ? (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+
+                            const name = editingAcademicYearName.trim();
+
+                            if (!name) {
+                              toast.error("Укажи название учебного года.");
+                              return;
+                            }
+
+                            if (
+                              editingAcademicYearStartDate >=
+                              editingAcademicYearEndDate
+                            ) {
+                              toast.error(
+                                "Дата начала должна быть раньше даты окончания.",
+                              );
+                              return;
+                            }
+
+                            updateAcademicYearMutation.mutate({
+                              id: year.id,
+                              request: {
+                                name,
+                                startDate: editingAcademicYearStartDate,
+                                endDate: editingAcademicYearEndDate,
+                              },
+                            });
+                          }}
+                          className="grid gap-4 sm:grid-cols-3"
+                        >
+                          <label className="text-sm font-medium text-slate-700 sm:col-span-3">
+                            Название
+                            <input
+                              className={inputClass}
+                              type="text"
+                              maxLength={20}
+                              required
+                              value={editingAcademicYearName}
+                              onChange={(event) =>
+                                setEditingAcademicYearName(event.target.value)
+                              }
+                            />
+                          </label>
+
+                          <label className="text-sm font-medium text-slate-700">
+                            Дата начала
+                            <input
+                              className={inputClass}
+                              type="date"
+                              required
+                              value={editingAcademicYearStartDate}
+                              onChange={(event) =>
+                                setEditingAcademicYearStartDate(
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+
+                          <label className="text-sm font-medium text-slate-700">
+                            Дата окончания
+                            <input
+                              className={inputClass}
+                              type="date"
+                              required
+                              min={editingAcademicYearStartDate || undefined}
+                              value={editingAcademicYearEndDate}
+                              onChange={(event) =>
+                                setEditingAcademicYearEndDate(
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+
+                          <div className="flex items-end gap-2">
+                            <button
+                              type="submit"
+                              disabled={updateAcademicYearMutation.isPending}
+                              className={`${buttonPrimary} flex-1`}
+                            >
+                              Сохранить
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setEditingAcademicYearId(null)}
+                              className={buttonSecondary}
+                            >
+                              Отмена
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h3 className="font-semibold text-[#1D3557]">
+                                {year.name}
+                              </h3>
+
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[year.status]}`}
+                              >
+                                {academicYearStatusLabel(year.status)}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-600">
+                              {formatAcademicYearDate(year.startDate)}
+                              {" — "}
+                              {formatAcademicYearDate(year.endDate)}
+                            </p>
+                          </div>
+
+                          {year.status === "PLANNED" && (
+                            <button
+                              type="button"
+                              onClick={() => startEditingAcademicYear(year)}
+                              className={buttonSecondary}
+                            >
+                              <Pencil size={15} />
+                              Изменить
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
         {section === "overview" && (
           <>
             <OrganizationHierarchyCard

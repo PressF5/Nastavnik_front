@@ -11,6 +11,7 @@ import {
   X,
   SlidersHorizontal,
   Users,
+  CalendarDays,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -36,6 +37,7 @@ const regionNavigation: {
   { id: "requests", label: "Заявки", icon: ClipboardCheck },
   { id: "accounts", label: "Администраторы МСУ", icon: UserRound },
   { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },
+  { id: "academic-years", label: "Учебные годы", icon: CalendarDays},
 ];
 
 const profileRoleNavigation: {

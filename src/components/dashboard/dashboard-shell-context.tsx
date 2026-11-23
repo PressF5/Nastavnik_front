@@ -16,7 +16,8 @@ export type DashboardSection =
   | "mentee-requests"
   | "mentees"
   | "mentor-assignment"
-  | "mentorship-assignments";
+  | "mentorship-assignments"
+  | "academic-years";
 
 type DashboardShellContextValue = {
   section: DashboardSection;
