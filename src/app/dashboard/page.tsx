@@ -1015,13 +1015,25 @@ export default function DashboardPage() {
                             />
                           </label>
 
-                          <div className="flex items-end gap-2">
+                          <div className="flex flex-wrap items-end gap-2 sm:col-span-3">
                             <button
                               type="submit"
                               disabled={updateAcademicYearMutation.isPending}
                               className={`${buttonPrimary} flex-1`}
                             >
-                              Сохранить
+                              {updateAcademicYearMutation.isPending
+                                ? "Сохранение..."
+                                : "Сохранить"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => confirmDeleteAcademicYear(year)}
+                              disabled={deleteAcademicYearMutation.isPending}
+                              className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
+                            >
+                              <Trash2 size={15} />
+                              Удалить
                             </button>
 
                             <button
@@ -1075,20 +1087,6 @@ export default function DashboardPage() {
                                 >
                                   <Pencil size={15} />
                                   Изменить
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    confirmDeleteAcademicYear(year)
-                                  }
-                                  disabled={
-                                    deleteAcademicYearMutation.isPending
-                                  }
-                                  className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
-                                >
-                                  <Trash2 size={15} />
-                                  Удалить
                                 </button>
                               </>
                             )}
