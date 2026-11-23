@@ -50,7 +50,15 @@ type ProfileFormField = {
   } | null;
 };
 
-type MentorshipStatus = "PENDING" | "ACCEPTED";
+type AcademicYear = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED";
+};
+
+type MentorshipStatus = "PENDING" | "ACCEPTED" | "ENDED";
 
 type Mentorship = {
   id: number;
@@ -196,6 +204,10 @@ export function MenteeDashboard() {
   const { section } = useDashboardShell();
   const [showMentorProfile, setShowMentorProfile] = useState(false);
 
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<
+    number | null
+  >(null);
+
   const organizationContextQuery = useQuery({
     queryKey: ["organization-context", user?.id],
     queryFn: () =>
@@ -209,25 +221,59 @@ export function MenteeDashboard() {
     enabled: user?.role === "MENTEE",
   });
 
+  const academicYearsQuery = useQuery({
+    queryKey: ["academic-years", "available", user?.id],
+    queryFn: () => apiFetch<AcademicYear[]>("/api/academic-years/available"),
+    enabled: user?.role === "MENTEE",
+  });
+
+  const academicYears = academicYearsQuery.data ?? [];
+
+  const activeAcademicYearId =
+    selectedAcademicYearId ?? academicYears[0]?.id ?? null;
+
+  const selectedAcademicYear = academicYears.find(
+    (year) => year.id === activeAcademicYearId,
+  );
+
   const mentorshipQuery = useQuery({
-    queryKey: ["mentee", "mentorship", user?.id],
+    queryKey: ["mentee", "mentorship", user?.id, activeAcademicYearId],
     queryFn: async () => {
       const response = await apiFetch<Mentorship | null>(
         "/api/mentee/mentorship",
+        {
+          params: {
+            academicYearId: activeAcademicYearId!,
+          },
+        },
       );
 
       return response ?? null;
     },
-    enabled: user?.role === "MENTEE" && section === "mentorship",
+    enabled:
+      user?.role === "MENTEE" &&
+      section === "mentorship" &&
+      activeAcademicYearId !== null,
   });
 
   const mentorProfileQuery = useQuery({
-    queryKey: ["mentee", "mentor-profile", mentorshipQuery.data?.id],
-    queryFn: () => apiFetch<MentorProfile>("/api/mentee/mentor"),
+    queryKey: [
+      "mentee",
+      "mentor-profile",
+      mentorshipQuery.data?.id,
+      activeAcademicYearId,
+    ],
+    queryFn: () =>
+      apiFetch<MentorProfile>("/api/mentee/mentor", {
+        params: {
+          academicYearId: activeAcademicYearId!,
+        },
+      }),
     enabled:
       user?.role === "MENTEE" &&
       section === "mentorship" &&
       showMentorProfile &&
+      activeAcademicYearId !== null &&
       Boolean(mentorshipQuery.data),
   });
 
@@ -303,6 +349,61 @@ export function MenteeDashboard() {
         )}
         {section === "mentorship" && (
           <section className="space-y-5">
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-semibold text-[#1D3557]">Учебный год</h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Выберите год, за который хотите просмотреть информацию о
+                    наставничестве.
+                  </p>
+                </div>
+
+                {academicYearsQuery.isPending ? (
+                  <p className="text-sm text-slate-500">
+                    Загружаем учебные годы...
+                  </p>
+                ) : academicYearsQuery.isError ? (
+                  <button
+                    type="button"
+                    onClick={() => void academicYearsQuery.refetch()}
+                    className="text-sm font-medium text-red-600 hover:underline"
+                  >
+                    Не удалось загрузить годы. Повторить
+                  </button>
+                ) : academicYears.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    Доступных учебных годов пока нет.
+                  </p>
+                ) : (
+                  <select
+                    value={activeAcademicYearId ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+
+                      setSelectedAcademicYearId(value ? Number(value) : null);
+                      setShowMentorProfile(false);
+                    }}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#457B9D] sm:w-64"
+                  >
+                    {academicYears.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
+                        {year.status === "ACTIVE" ? " (текущий)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {selectedAcademicYear?.status === "COMPLETED" && (
+                <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                  Вы просматриваете завершённый учебный год. Здесь доступна
+                  история наставничества.
+                </p>
+              )}
+            </div>
             {mentorshipQuery.isPending && (
               <div className="rounded-xl border border-slate-200 bg-white p-6">
                 <p className="text-sm text-slate-500">
@@ -365,12 +466,16 @@ export function MenteeDashboard() {
                       "inline-flex rounded-full px-3 py-1.5 text-xs font-medium",
                       mentorshipQuery.data.status === "ACCEPTED"
                         ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-800",
+                        : mentorshipQuery.data.status === "PENDING"
+                          ? "bg-amber-50 text-amber-800"
+                          : "bg-slate-100 text-slate-600",
                     ].join(" ")}
                   >
                     {mentorshipQuery.data.status === "ACCEPTED"
                       ? "Наставничество действует"
-                      : "Ожидает принятия"}
+                      : mentorshipQuery.data.status === "PENDING"
+                        ? "Ожидает принятия"
+                        : "Наставничество завершено"}
                   </span>
                 </div>
 
@@ -424,9 +529,9 @@ export function MenteeDashboard() {
                     </div>
 
                     <p className="mt-2 text-sm font-semibold text-slate-800">
-                      {mentorshipQuery.data.status === "ACCEPTED"
-                        ? formatDate(mentorshipQuery.data.startedAt)
-                        : "Ожидает принятия наставником"}
+                      {mentorshipQuery.data.status === "PENDING"
+                        ? "Ожидает принятия наставником"
+                        : formatDate(mentorshipQuery.data.startedAt)}
                     </p>
                   </div>
                 </div>
