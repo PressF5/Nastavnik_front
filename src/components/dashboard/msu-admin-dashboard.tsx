@@ -10,7 +10,6 @@ import {
   Users,
   X,
   Pencil,
-  Save,
   Trash2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
