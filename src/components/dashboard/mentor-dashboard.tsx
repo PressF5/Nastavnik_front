@@ -780,15 +780,16 @@ export function MentorDashboard() {
                       <p>Дата предложения: {formatDate(item.createdAt)}</p>
                     </div>
 
-                    <div className="mt-5 flex flex-wrap gap-2">
+                    <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <button
                         type="button"
                         onClick={() => setSelectedRequestProfileId(item.id)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-[#457B9D]/30 bg-[#457B9D]/5 px-4 py-2 text-sm font-medium text-[#1D3557] hover:bg-[#457B9D]/10"
+                        className="col-span-full inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#457B9D]/30 bg-[#457B9D]/5 px-4 py-2 text-sm font-medium text-[#1D3557] hover:bg-[#457B9D]/10"
                       >
                         <UserRound size={16} />
                         Посмотреть анкету
                       </button>
+
                       <button
                         type="button"
                         disabled={
@@ -801,7 +802,7 @@ export function MentorDashboard() {
                             request: { decision: "ACCEPT" },
                           })
                         }
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2 text-sm font-medium text-white hover:bg-[#27476f] disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D3557] px-4 py-2 text-sm font-medium text-white hover:bg-[#27476f] disabled:opacity-50"
                       >
                         <Check size={16} />
                         Принять
@@ -811,7 +812,7 @@ export function MentorDashboard() {
                         type="button"
                         disabled={decisionMutation.isPending}
                         onClick={() => setSelectedRequestId(item.id)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                       >
                         <X size={16} />
                         Отклонить
@@ -1020,21 +1021,21 @@ export function MentorDashboard() {
                 {mentees.map((item) => (
                   <article
                     key={item.id}
-                    className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
+                    className="flex h-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
                   >
-                    <div>
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                    <div className="min-w-0 flex-1">
+                      <div className="space-y-3">
+                        <div className="min-w-0">
                           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Наставляемый №{item.menteeId}
                           </p>
 
-                          <h3 className="mt-2 font-semibold leading-6 text-[#1D3557]">
+                          <h3 className="mt-2 wrap-anywhere font-semibold leading-6 text-[#1D3557]">
                             {fullName(item)}
                           </h3>
                         </div>
 
-                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                        <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
                           Наставничество действует
                         </span>
                       </div>
@@ -1044,7 +1045,7 @@ export function MentorDashboard() {
                           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Образовательная организация
                           </p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
+                          <p className="mt-1 wrap-break-words text-sm font-medium text-slate-700">
                             {item.menteeEducationalOrganizationName ??
                               "Не указана"}
                           </p>
@@ -1070,7 +1071,7 @@ export function MentorDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
+                    <div className="mt-auto flex flex-col gap-2 border-t border-slate-100 pt-4">
                       <button
                         type="button"
                         onClick={() => setSelectedMenteeId(item.menteeId)}
