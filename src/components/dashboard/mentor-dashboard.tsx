@@ -585,9 +585,7 @@ export function MentorDashboard() {
               </p>
 
               <p className="mt-3 text-xs text-slate-500">
-                Подтверждение участия не заменяет заполнение профильного поля
-                «Готовность к наставничеству». Для участия в подборе необходимы
-                оба условия.
+                Для участия в подборе необходимо подтвердить свое участие в роли наставника в текущем учебном году.
               </p>
             </div>
           )}
@@ -1018,7 +1016,7 @@ export function MentorDashboard() {
               </p>
             ) : (
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                {mentees.map((item) => (
+                {mentees.map((item, index) => (
                   <article
                     key={item.id}
                     className="flex h-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md"
@@ -1027,7 +1025,7 @@ export function MentorDashboard() {
                       <div className="space-y-3">
                         <div className="min-w-0">
                           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            Наставляемый №{item.menteeId}
+                            Наставляемый №{index + 1}
                           </p>
 
                           <h3 className="mt-2 wrap-anywhere font-semibold leading-6 text-[#1D3557]">
