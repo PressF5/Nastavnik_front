@@ -929,7 +929,7 @@ export default function DashboardPage() {
                 {academicYearsQuery.data.map((year) => {
                   const isEditing = editingAcademicYearId === year.id;
                   const canEdit = !year.published || year.status === "PLANNED";
-                  const canDelete = year.status === "PLANNED";
+                  const canDelete = !year.published;
 
                   const statusStyles = {
                     PLANNED: "bg-blue-50 text-blue-700",
@@ -1031,7 +1031,7 @@ export default function DashboardPage() {
                                 : "Сохранить"}
                             </button>
 
-                           <button
+                            <button
                               type="button"
                               onClick={() => setEditingAcademicYearId(null)}
                               className={buttonSecondary}
