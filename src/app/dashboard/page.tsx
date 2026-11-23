@@ -30,6 +30,7 @@ import type { OrganizationContext } from "@/components/dashboard/organization-hi
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { MenteeDashboard } from "@/components/dashboard/mentee-dashboard";
 import { MentorDashboard } from "@/components/dashboard/mentor-dashboard";
+import { AcademicYearMentorParticipations } from "@/components/dashboard/academic-year-mentor-participations";
 
 type Msu = {
   id: number;
@@ -1019,26 +1020,32 @@ export default function DashboardPage() {
                               }
                             />
                           </label>
+                          <>
+                            <div className="flex flex-wrap items-end gap-2 sm:col-span-3">
+                              <button
+                                type="submit"
+                                disabled={updateAcademicYearMutation.isPending}
+                                className={`${buttonPrimary} flex-1`}
+                              >
+                                {updateAcademicYearMutation.isPending
+                                  ? "Сохранение..."
+                                  : "Сохранить"}
+                              </button>
 
-                          <div className="flex flex-wrap items-end gap-2 sm:col-span-3">
-                            <button
-                              type="submit"
-                              disabled={updateAcademicYearMutation.isPending}
-                              className={`${buttonPrimary} flex-1`}
-                            >
-                              {updateAcademicYearMutation.isPending
-                                ? "Сохранение..."
-                                : "Сохранить"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setEditingAcademicYearId(null)}
-                              className={buttonSecondary}
-                            >
-                              Отмена
-                            </button>
-                          </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditingAcademicYearId(null)}
+                                className={buttonSecondary}
+                              >
+                                Отмена
+                              </button>
+                            </div>
+                            {year.published && (
+                              <AcademicYearMentorParticipations
+                                academicYearId={year.id}
+                              />
+                            )}
+                          </>
                         </form>
                       ) : (
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
