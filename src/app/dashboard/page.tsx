@@ -54,6 +54,7 @@ type AcademicYear = {
   startDate: string;
   endDate: string;
   status: "PLANNED" | "ACTIVE" | "COMPLETED";
+  canEdit: boolean;
 };
 
 type AcademicYearRequest = {
@@ -929,7 +930,7 @@ export default function DashboardPage() {
               <div className="mt-6 space-y-3">
                 {academicYearsQuery.data.map((year) => {
                   const isEditing = editingAcademicYearId === year.id;
-                  const canEdit = !year.published || year.status === "PLANNED";
+                  const canEdit = year.canEdit;
                   const canDelete = !year.published;
 
                   const statusStyles = {
