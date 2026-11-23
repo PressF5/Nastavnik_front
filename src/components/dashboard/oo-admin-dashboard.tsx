@@ -220,6 +220,133 @@ function formatDateTime(value: string) {
   });
 }
 
+function historyStatusLabel(status: string | null) {
+  switch (status) {
+    case "PENDING":
+      return "Ожидание ответа";
+    case "ACCEPTED":
+      return "Принято";
+    case "REJECTED":
+      return "Отклонено";
+    case "ENDED":
+      return "Завершено";
+    default:
+      return status ?? "—";
+  }
+}
+
+function historyStatusClass(status: string | null) {
+  switch (status) {
+    case "PENDING":
+      return "bg-amber-50 text-amber-700";
+    case "ACCEPTED":
+      return "bg-emerald-50 text-emerald-700";
+    case "REJECTED":
+      return "bg-red-50 text-red-700";
+    case "ENDED":
+      return "bg-violet-50 text-violet-700";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
+}
+
+function MentorshipHistory({ assignmentId }: { assignmentId: number }) {
+  const historyQuery = useQuery({
+    queryKey: ["mentorship-history", assignmentId],
+    queryFn: () =>
+      apiFetch<MentorshipAuditLog[]>(
+        `/api/admin/mentorship-assignments/${assignmentId}/history`,
+      ),
+  });
+
+  if (historyQuery.isPending) {
+    return (
+      <p className="py-4 text-sm text-slate-500">
+        Загружаем историю изменений...
+      </p>
+    );
+  }
+
+  if (historyQuery.isError) {
+    return (
+      <div
+        role="alert"
+        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+      >
+        Не удалось загрузить историю изменений.
+      </div>
+    );
+  }
+
+  if (!historyQuery.data?.length) {
+    return (
+      <p className="py-4 text-sm text-slate-500">
+        История изменений пока пуста.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {historyQuery.data.map((log, index) => (
+        <div key={log.id} className="relative pl-6">
+          <span className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-[#457B9D]" />
+
+          {index !== historyQuery.data.length - 1 && (
+            <span className="absolute -bottom-4.5 left-1 top-5 w-px bg-slate-200" />
+          )}
+
+          <div>
+            <p className="text-sm font-medium text-[#1D3557]">
+              {auditActionLabel(log.action)}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {formatDateTime(log.createdAt)}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-600">
+              {log.actorName}
+              {log.source === "SYSTEM" && " · Система"}
+            </p>
+
+            {(log.oldStatus || log.newStatus) && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-slate-500">Статус:</span>
+
+                <span
+                  className={`rounded-full px-2.5 py-1 font-medium ${historyStatusClass(log.oldStatus)}`}
+                >
+                  {historyStatusLabel(log.oldStatus)}
+                </span>
+
+                <span className="text-slate-400">→</span>
+
+                <span
+                  className={`rounded-full px-2.5 py-1 font-medium ${historyStatusClass(log.newStatus)}`}
+                >
+                  {historyStatusLabel(log.newStatus)}
+                </span>
+              </div>
+            )}
+
+            {log.comment && (
+              <div className="mt-2 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-medium text-slate-500">
+                  Комментарий
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                  {log.comment}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function OoAdminDashboard() {
   const queryClient = useQueryClient();
 
@@ -241,8 +368,8 @@ export function OoAdminDashboard() {
     "ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "ENDED"
   >("ALL");
   const [assignmentPage, setAssignmentPage] = useState(0);
-  const [expandedHistoryId, setExpandedHistoryId] = useState<number | null>(
-    null,
+  const [expandedHistoryIds, setExpandedHistoryIds] = useState<Set<number>>(
+    () => new Set(),
   );
 
   const pendingMenteesQuery = useQuery({
@@ -341,18 +468,6 @@ export function OoAdminDashboard() {
         },
       ),
     enabled: user?.role === "OO_ADMIN" && section === "mentorship-assignments",
-  });
-
-  const mentorshipHistoryQuery = useQuery({
-    queryKey: ["oo-admin", user?.id, "mentorship-history", expandedHistoryId],
-    queryFn: () =>
-      apiFetch<MentorshipAuditLog[]>(
-        `/api/admin/mentorship-assignments/${expandedHistoryId}/history`,
-      ),
-    enabled:
-      user?.role === "OO_ADMIN" &&
-      section === "mentorship-assignments" &&
-      expandedHistoryId !== null,
   });
 
   const invalidateDashboard = async () => {
@@ -1218,85 +1333,32 @@ export function OoAdminDashboard() {
                       <button
                         type="button"
                         onClick={() =>
-                          setExpandedHistoryId((current) =>
-                            current === assignment.id ? null : assignment.id,
-                          )
+                          setExpandedHistoryIds((current) => {
+                            const next = new Set(current);
+
+                            if (next.has(assignment.id)) {
+                              next.delete(assignment.id);
+                            } else {
+                              next.add(assignment.id);
+                            }
+
+                            return next;
+                          })
                         }
                         className="inline-flex items-center gap-2 text-sm font-medium text-[#457B9D] transition hover:text-[#1D3557]"
                       >
                         <History size={16} />
                         История изменений
-                        {expandedHistoryId === assignment.id ? (
+                        {expandedHistoryIds.has(assignment.id) ? (
                           <ChevronUp size={16} />
                         ) : (
                           <ChevronDown size={16} />
                         )}
                       </button>
 
-                      {expandedHistoryId === assignment.id && (
+                      {expandedHistoryIds.has(assignment.id) && (
                         <div className="mt-4">
-                          {mentorshipHistoryQuery.isPending ? (
-                            <p className="py-4 text-sm text-slate-500">
-                              Загружаем историю изменений...
-                            </p>
-                          ) : mentorshipHistoryQuery.isError ? (
-                            <div
-                              role="alert"
-                              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-                            >
-                              Не удалось загрузить историю изменений.
-                            </div>
-                          ) : !mentorshipHistoryQuery.data?.length ? (
-                            <p className="py-4 text-sm text-slate-500">
-                              История изменений пока пуста.
-                            </p>
-                          ) : (
-                            <div className="space-y-4">
-                              {mentorshipHistoryQuery.data.map((log, index) => (
-                                <div key={log.id} className="relative pl-6">
-                                  <span className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-[#457B9D]" />
-
-                                  {index !==
-                                    mentorshipHistoryQuery.data!.length - 1 && (
-                                    <span className="absolute -bottom-4.5 left-1 top-5 w-px bg-slate-200" />
-                                  )}
-
-                                  <div>
-                                    <p className="text-sm font-medium text-[#1D3557]">
-                                      {auditActionLabel(log.action)}
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-slate-500">
-                                      {formatDateTime(log.createdAt)}
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-slate-600">
-                                      {log.actorName}
-                                      {log.source === "SYSTEM" && " · Система"}
-                                    </p>
-
-                                    {(log.oldStatus || log.newStatus) && (
-                                      <p className="mt-2 text-xs text-slate-500">
-                                        Статус: {log.oldStatus ?? "—"} →{" "}
-                                        {log.newStatus ?? "—"}
-                                      </p>
-                                    )}
-
-                                    {log.comment && (
-                                      <div className="mt-2 rounded-lg bg-slate-50 p-3">
-                                        <p className="text-xs font-medium text-slate-500">
-                                          Комментарий
-                                        </p>
-                                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
-                                          {log.comment}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          <MentorshipHistory assignmentId={assignment.id} />
                         </div>
                       )}
                     </div>
