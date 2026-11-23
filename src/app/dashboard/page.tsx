@@ -189,6 +189,9 @@ export default function DashboardPage() {
   const [editingAcademicYearId, setEditingAcademicYearId] = useState<
     number | null
   >(null);
+  const [academicYearActionsId, setAcademicYearActionsId] = useState<
+    number | null
+  >(null);
   const [editingAcademicYearName, setEditingAcademicYearName] = useState("");
   const [editingAcademicYearStartDate, setEditingAcademicYearStartDate] =
     useState("");
@@ -827,7 +830,7 @@ export default function DashboardPage() {
                 onClick={() => setShowAcademicYearForm((value) => !value)}
                 className={buttonPrimary}
               >
-                <Plus size={17} />
+                {!showAcademicYearForm && <Plus size={17} />}
                 {showAcademicYearForm ? "Отмена" : "Создать учебный год"}
               </button>
             </div>
@@ -1080,14 +1083,56 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             {year.status === "PLANNED" && (
                               <>
-                                <button
-                                  type="button"
-                                  onClick={() => startEditingAcademicYear(year)}
-                                  className={buttonSecondary}
-                                >
-                                  <Pencil size={15} />
-                                  Изменить
-                                </button>
+                                {academicYearActionsId !== year.id ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setAcademicYearActionsId(year.id)
+                                    }
+                                    className={buttonSecondary}
+                                  >
+                                    <Pencil size={15} />
+                                    Редактировать
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        startEditingAcademicYear(year);
+                                        setAcademicYearActionsId(null);
+                                      }}
+                                      className={buttonSecondary}
+                                    >
+                                      <Pencil size={15} />
+                                      Изменить
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        confirmDeleteAcademicYear(year)
+                                      }
+                                      disabled={
+                                        deleteAcademicYearMutation.isPending
+                                      }
+                                      className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
+                                    >
+                                      <Trash2 size={15} />
+                                      Удалить
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setAcademicYearActionsId(null)
+                                      }
+                                      className={buttonSecondary}
+                                    >
+                                      Отмена
+                                    </button>
+                                  </>
+                                )}
                               </>
                             )}
 
