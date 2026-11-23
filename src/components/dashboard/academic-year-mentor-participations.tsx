@@ -154,57 +154,63 @@ export function AcademicYearMentorParticipations({ academicYearId }: Props) {
             </p>
           ) : (
             <>
-              <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <table className="w-full min-w-212.5 text-left text-sm">
-                  <thead className="bg-slate-100 text-xs text-slate-600">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Наставник</th>
-                      <th className="px-4 py-3 font-semibold">МСУ</th>
-                      <th className="px-4 py-3 font-semibold">ОО</th>
-                      <th className="px-4 py-3 font-semibold">Участие</th>
-                      <th className="px-4 py-3 font-semibold">
-                        Учётная запись
-                      </th>
-                    </tr>
-                  </thead>
+              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                {participationsQuery.data.content.map((mentor) => (
+                  <article
+                    key={mentor.mentorId}
+                    className="rounded-xl border border-slate-200 bg-white p-4"
+                  >
+                    <div className="space-y-2">
+                      <h5 className="wrap-break-words font-semibold text-[#1D3557]">
+                        {mentor.fullName}
+                      </h5>
 
-                  <tbody className="divide-y divide-slate-100">
-                    {participationsQuery.data.content.map((mentor) => (
-                      <tr key={mentor.mentorId}>
-                        <td className="px-4 py-3 font-medium text-slate-800">
-                          {mentor.fullName}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
+                      <div>
+                        <span
+                          className={
+                            mentor.participated
+                              ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                              : "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+                          }
+                        >
+                          {mentor.participated ? "Подтвердил" : "Не подтвердил"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <dl className="mt-4 space-y-3 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-500">МСУ</dt>
+                        <dd className="mt-0.5 font-medium text-slate-700">
                           {mentor.msuName ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs text-slate-500">
+                          Образовательная организация
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-slate-700">
                           {mentor.educationalOrganizationName ?? "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={
-                              mentor.participated
-                                ? "font-medium text-emerald-700"
-                                : "font-medium text-amber-700"
-                            }
-                          >
-                            {mentor.participated
-                              ? "Подтвердил"
-                              : "Не подтвердил"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs text-slate-500">
+                          Учётная запись
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-slate-700">
                           {accountStatusLabel(mentor.accountStatus)}
                           {mentor.blocked && (
-                            <span className="ml-2 font-medium text-red-600">
-                              Заблокирована
+                            <span className="ml-2 text-red-600">
+                              (Заблокирована)
                             </span>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

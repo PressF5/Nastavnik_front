@@ -1020,32 +1020,25 @@ export default function DashboardPage() {
                               }
                             />
                           </label>
-                          <>
-                            <div className="flex flex-wrap items-end gap-2 sm:col-span-3">
-                              <button
-                                type="submit"
-                                disabled={updateAcademicYearMutation.isPending}
-                                className={`${buttonPrimary} flex-1`}
-                              >
-                                {updateAcademicYearMutation.isPending
-                                  ? "Сохранение..."
-                                  : "Сохранить"}
-                              </button>
+                          <div className="flex flex-wrap items-end gap-2 sm:col-span-3">
+                            <button
+                              type="submit"
+                              disabled={updateAcademicYearMutation.isPending}
+                              className={`${buttonPrimary} flex-1`}
+                            >
+                              {updateAcademicYearMutation.isPending
+                                ? "Сохранение..."
+                                : "Сохранить"}
+                            </button>
 
-                              <button
-                                type="button"
-                                onClick={() => setEditingAcademicYearId(null)}
-                                className={buttonSecondary}
-                              >
-                                Отмена
-                              </button>
-                            </div>
-                            {year.published && (
-                              <AcademicYearMentorParticipations
-                                academicYearId={year.id}
-                              />
-                            )}
-                          </>
+                            <button
+                              type="button"
+                              onClick={() => setEditingAcademicYearId(null)}
+                              className={buttonSecondary}
+                            >
+                              Отмена
+                            </button>
+                          </div>
                         </form>
                       ) : (
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1152,6 +1145,13 @@ export default function DashboardPage() {
                               </button>
                             )}
                           </div>
+                        </div>
+                      )}
+                      {year.published && (
+                        <div className="mt-4">
+                          <AcademicYearMentorParticipations
+                            academicYearId={year.id}
+                          />
                         </div>
                       )}
                     </article>
