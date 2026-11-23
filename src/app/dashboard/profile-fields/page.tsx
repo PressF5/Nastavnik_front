@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   Power,
   RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -1181,6 +1182,7 @@ function ProfileMatchingRuleEditor({
   );
 
   const [weight, setWeight] = useState(String(rule?.weight ?? 5));
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setComparisonType(
@@ -1234,156 +1236,181 @@ function ProfileMatchingRuleEditor({
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-semibold text-[#1D3557]">
-            Правило подбора
-          </h4>
-
-          <p className="mt-1 text-xs text-slate-500">
-            Настройка сравнения значений этого поля у наставника и
-            наставляемого.
-          </p>
-        </div>
-
-        {rule && (
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              !rule.active
-                ? "bg-slate-200 text-slate-600"
-                : canUseMatching
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
-            }`}
-          >
-            {!rule.active
-              ? "Неактивно"
-              : canUseMatching
-                ? "Участвует в подборе"
-                : "Временно не участвует"}
-          </span>
-        )}
-      </div>
-
-      {!canUseMatching && !rule && (
-        <p className="text-sm text-slate-500">
-          Для настройки правила необходимо активное поле, включённое в подбор и
-          назначенное обеим ролям.
-        </p>
-      )}
-
-      {rule && !canUseMatching && rule.active && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Поле временно не участвует в расчёте совместимости. Правило и его
-          настройки сохранены. После активации поля и восстановления его участия
-          в подборе оно автоматически вернётся в расчёт.
-        </p>
-      )}
-
-      {(canUseMatching || rule) && (
-        <div className="grid gap-4 sm:grid-cols-2">
+    <div className="rounded-lg border border-slate-200 bg-slate-50">
+      {/* Заголовок и кнопка раскрытия */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded((previous) => !previous)}
+        aria-expanded={isExpanded}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left transition hover:bg-slate-100/70"
+      >
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">
-              Тип сравнения
-            </label>
+            <h4 className="text-sm font-semibold text-[#1D3557]">
+              Правило подбора
+            </h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Настройки сравнения значений анкет
+            </p>
+          </div>
 
-            <select
-              value={comparisonType}
-              onChange={(event) =>
-                setComparisonType(event.target.value as ComparisonType)
-              }
-              disabled={isPending || (Boolean(rule?.active) && !canUseMatching)}
-              className={inputClass}
+          {rule && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                !rule.active
+                  ? "bg-slate-200 text-slate-600"
+                  : canUseMatching
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-amber-50 text-amber-700"
+              }`}
             >
-              {availableTypes.map((type) => (
-                <option key={type} value={type}>
-                  {comparisonTypeLabels[type]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Вес правила (1–10)
-            </label>
-
-            <input
-              type="number"
-              min={1}
-              max={10}
-              step={1}
-              value={weight}
-              onChange={(event) => setWeight(event.target.value)}
-              disabled={isPending || (Boolean(rule?.active) && !canUseMatching)}
-              className={inputClass}
-            />
-          </div>
+              {!rule.active
+                ? "Неактивно"
+                : canUseMatching
+                  ? "Участвует в подборе"
+                  : "Временно не участвует"}
+            </span>
+          )}
         </div>
-      )}
 
-      <div className="flex flex-wrap justify-end gap-2">
-        {!rule && (
-          <button
-            type="button"
-            onClick={() => handleSave(true)}
-            disabled={!canUseMatching || isPending}
-            className={buttonPrimary}
-          >
-            {isPending && <LoaderCircle size={16} className="animate-spin" />}
-            Создать правило
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-2 text-sm font-medium text-[#457B9D]">
+          <span>{isExpanded ? "Скрыть" : "Настроить"}</span>
+          <ChevronDown
+            size={18}
+            className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </div>
+      </button>
 
-        {rule && (
-          <>
-            {rule.active ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleSave(false)}
-                  disabled={isPending}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+      {/* Настройки правила */}
+      {isExpanded && (
+        <div className="space-y-4 border-t border-slate-200 p-4">
+          {!canUseMatching && !rule && (
+            <p className="text-sm text-slate-500">
+              Для настройки правила необходимо активное поле, включённое в
+              подбор и назначенное обеим ролям.
+            </p>
+          )}
+
+          {rule && !canUseMatching && rule.active && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              Поле временно не участвует в расчёте совместимости. Правило и его
+              настройки сохранены. После активации поля и восстановления его
+              участия в подборе оно автоматически вернётся в расчёт.
+            </p>
+          )}
+
+          {(canUseMatching || rule) && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Тип сравнения
+                </label>
+
+                <select
+                  value={comparisonType}
+                  onChange={(event) =>
+                    setComparisonType(event.target.value as ComparisonType)
+                  }
+                  disabled={
+                    isPending || (Boolean(rule?.active) && !canUseMatching)
+                  }
+                  className={inputClass}
                 >
-                  Деактивировать
-                </button>
+                  {availableTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {comparisonTypeLabels[type]}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {canUseMatching && (
-                  <button
-                    type="button"
-                    onClick={() => handleSave(true)}
-                    disabled={isPending}
-                    className={buttonPrimary}
-                  >
-                    Сохранить изменения
-                  </button>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Вес правила (1–10)
+                </label>
+
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={weight}
+                  onChange={(event) => setWeight(event.target.value)}
+                  disabled={
+                    isPending || (Boolean(rule?.active) && !canUseMatching)
+                  }
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-2">
+            {!rule && (
+              <button
+                type="button"
+                onClick={() => handleSave(true)}
+                disabled={!canUseMatching || isPending}
+                className={buttonPrimary}
+              >
+                {isPending && (
+                  <LoaderCircle size={16} className="animate-spin" />
+                )}
+                Создать правило
+              </button>
+            )}
+
+            {rule && (
+              <>
+                {rule.active ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSave(false)}
+                      disabled={isPending}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Деактивировать
+                    </button>
+
+                    {canUseMatching && (
+                      <button
+                        type="button"
+                        onClick={() => handleSave(true)}
+                        disabled={isPending}
+                        className={buttonPrimary}
+                      >
+                        Сохранить изменения
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSave(false)}
+                      disabled={isPending}
+                      className={buttonSecondary}
+                    >
+                      Сохранить настройки
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSave(true)}
+                      disabled={!canUseMatching || isPending}
+                      className={buttonPrimary}
+                    >
+                      Активировать
+                    </button>
+                  </>
                 )}
               </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleSave(false)}
-                  disabled={isPending}
-                  className={buttonSecondary}
-                >
-                  Сохранить настройки
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSave(true)}
-                  disabled={!canUseMatching || isPending}
-                  className={buttonPrimary}
-                >
-                  Активировать
-                </button>
-              </>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
