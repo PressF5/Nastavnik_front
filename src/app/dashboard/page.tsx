@@ -928,6 +928,8 @@ export default function DashboardPage() {
               <div className="mt-6 space-y-3">
                 {academicYearsQuery.data.map((year) => {
                   const isEditing = editingAcademicYearId === year.id;
+                  const canEdit = !year.published || year.status === "PLANNED";
+                  const canDelete = year.status === "PLANNED";
 
                   const statusStyles = {
                     PLANNED: "bg-blue-50 text-blue-700",
@@ -1029,17 +1031,7 @@ export default function DashboardPage() {
                                 : "Сохранить"}
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => confirmDeleteAcademicYear(year)}
-                              disabled={deleteAcademicYearMutation.isPending}
-                              className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
-                            >
-                              <Trash2 size={15} />
-                              Удалить
-                            </button>
-
-                            <button
+                           <button
                               type="button"
                               onClick={() => setEditingAcademicYearId(null)}
                               className={buttonSecondary}
@@ -1081,7 +1073,7 @@ export default function DashboardPage() {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            {year.status === "PLANNED" && (
+                            {canEdit && (
                               <>
                                 {academicYearActionsId !== year.id ? (
                                   <button
@@ -1108,19 +1100,21 @@ export default function DashboardPage() {
                                       Изменить
                                     </button>
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        confirmDeleteAcademicYear(year)
-                                      }
-                                      disabled={
-                                        deleteAcademicYearMutation.isPending
-                                      }
-                                      className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
-                                    >
-                                      <Trash2 size={15} />
-                                      Удалить
-                                    </button>
+                                    {canDelete && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          confirmDeleteAcademicYear(year)
+                                        }
+                                        disabled={
+                                          deleteAcademicYearMutation.isPending
+                                        }
+                                        className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
+                                      >
+                                        <Trash2 size={15} />
+                                        Удалить
+                                      </button>
+                                    )}
 
                                     <button
                                       type="button"
