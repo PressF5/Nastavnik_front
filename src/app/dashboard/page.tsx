@@ -931,7 +931,7 @@ export default function DashboardPage() {
                 {academicYearsQuery.data.map((year) => {
                   const isEditing = editingAcademicYearId === year.id;
                   const canEdit = year.canEdit;
-                  const canDelete = !year.published;
+                  const canDelete = year.canEdit;
 
                   const statusStyles = {
                     PLANNED: "bg-blue-50 text-blue-700",
