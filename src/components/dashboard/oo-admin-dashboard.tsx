@@ -959,8 +959,8 @@ export function OoAdminDashboard() {
                       >
                         <div className="flex-1">
                           <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <h4 className="font-semibold text-[#1D3557]">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="wrap-anywhere font-semibold text-[#1D3557]">
                                 {[
                                   mentor.lastName,
                                   mentor.firstName,
@@ -975,7 +975,7 @@ export function OoAdminDashboard() {
                               </p>
                             </div>
 
-                            <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right">
+                            <div className="shrink-0 rounded-lg bg-emerald-50 px-3 py-2 text-right">
                               <p className="text-xs text-emerald-700">
                                 Совместимость
                               </p>
