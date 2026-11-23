@@ -51,6 +51,14 @@ type AcademicYear = {
   status: "PLANNED" | "ACTIVE" | "COMPLETED";
 };
 
+type MentorParticipation = {
+  academicYearId: number;
+  academicYearName: string;
+  startDate: string;
+  endDate: string;
+  participated: boolean;
+};
+
 type MenteeProfile = {
   id: number;
   firstName: string;
@@ -286,6 +294,37 @@ export function MentorDashboard() {
     enabled: user?.role === "MENTOR",
   });
 
+  const participationQuery = useQuery({
+    queryKey: ["mentor", user?.id, "participation"],
+    queryFn: () =>
+      apiFetch<MentorParticipation>("/api/mentor/participation/current"),
+    enabled: user?.role === "MENTOR",
+  });
+
+  const participationMutation = useMutation({
+    mutationFn: (participated: boolean) =>
+      apiFetch<MentorParticipation>("/api/mentor/participation/current", {
+        method: "PUT",
+        body: JSON.stringify({ participated }),
+      }),
+
+    onSuccess: (data) => {
+      queryClient.setQueryData(["mentor", user?.id, "participation"], data);
+
+      toast.success(
+        data.participated
+          ? "Участие в учебном году подтверждено."
+          : "Подтверждение участия отменено.",
+      );
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось изменить подтверждение участия", {
+        description: errorMessage(error),
+      });
+    },
+  });
+
   // Если пользователь ещё не выбрал год,
   // по умолчанию используем первый год из отсортированного списка.
   const academicYears = academicYearsQuery.data ?? [];
@@ -485,6 +524,74 @@ export function MentorDashboard() {
             </button>
           }
         />
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-[#1D3557]">
+                Участие в текущем учебном году
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Подтвердите участие, чтобы появляться в подборе наставников и
+                получать новые назначения.
+              </p>
+            </div>
+
+            {participationQuery.isPending ? (
+              <p className="text-sm text-slate-500">Загружаем информацию...</p>
+            ) : participationQuery.isError ? (
+              <button
+                type="button"
+                onClick={() => void participationQuery.refetch()}
+                className="text-sm font-medium text-red-600 hover:underline"
+              >
+                Не удалось загрузить. Повторить
+              </button>
+            ) : participationQuery.data ? (
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={participationQuery.data.participated}
+                  disabled={participationMutation.isPending}
+                  onChange={(event) =>
+                    participationMutation.mutate(event.target.checked)
+                  }
+                  className="h-5 w-5 rounded border-slate-300 text-[#457B9D] focus:ring-[#457B9D]"
+                />
+
+                <span className="text-sm font-medium text-slate-700">
+                  {participationQuery.data.participated
+                    ? "Участие подтверждено"
+                    : "Подтвердить участие"}
+                </span>
+              </label>
+            ) : null}
+          </div>
+
+          {participationQuery.data && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="text-sm text-slate-600">
+                Учебный год:{" "}
+                <span className="font-medium text-[#1D3557]">
+                  {participationQuery.data.academicYearName}
+                </span>
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Период: {formatDate(participationQuery.data.startDate)}
+                {" — "}
+                {formatDate(participationQuery.data.endDate)}
+              </p>
+
+              <p className="mt-3 text-xs text-slate-500">
+                Подтверждение участия не заменяет заполнение профильного поля
+                «Готовность к наставничеству». Для участия в подборе необходимы
+                оба условия.
+              </p>
+            </div>
+          )}
+        </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
