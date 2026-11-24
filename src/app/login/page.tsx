@@ -43,6 +43,7 @@ export default function LoginPage() {
   async function handleSubmit(event: FormSubmitEvent) {
     event.preventDefault();
     setError("");
+    setRegistrationSuccess(false);
     setIsSubmitting(true);
 
     try {
