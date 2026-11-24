@@ -384,6 +384,25 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
                   <option value="OFFLINE">Очно</option>
                   <option value="HYBRID">Смешанный</option>
                 </select>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Ссылка на мероприятие
+                  </label>
+
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(event) => setUrl(event.target.value)}
+                    maxLength={1000}
+                    placeholder="https://example.ru"
+                    className={inputClass}
+                  />
+
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Основная ссылка для подключения или перехода к мероприятию.
+                  </p>
+                </div>
               </div>
 
               {format !== "ONLINE" && (
@@ -590,28 +609,6 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
                   </div>
                 </div>
               ))}
-            </section>
-
-            {/* Ссылка на мероприятие */}
-            <section className="space-y-3 border-t border-slate-200 pt-5">
-              <h3 className="font-semibold text-[#1D3557]">
-                Дополнительная ссылка
-              </h3>
-
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Ссылка на мероприятие
-                </label>
-
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(event) => setUrl(event.target.value)}
-                  maxLength={1000}
-                  placeholder="https://example.ru"
-                  className={inputClass}
-                />
-              </div>
             </section>
 
             <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-5">

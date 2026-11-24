@@ -165,7 +165,7 @@ export default function EventsPage() {
     return () => window.clearTimeout(timeout);
   }, [eventsQuery.data?.content, eventsQuery.refetch]);
 
-  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+  function handleSearch(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(0);
     setSearch(searchInput.trim());
@@ -312,11 +312,15 @@ export default function EventsPage() {
                         {statusLabel(eventItem.status)}
                       </span>
 
-                      {!eventItem.active && (
-                        <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
-                          Неактивно
-                        </span>
-                      )}
+                      <span
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                          eventItem.active
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {eventItem.active ? "Активно" : "Неактивно"}
+                      </span>
                     </div>
 
                     <h2 className="mt-4 font-semibold leading-6 text-[#1D3557]">

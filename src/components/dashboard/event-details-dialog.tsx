@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "radix-ui";
+import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, X } from "lucide-react";
 
 export type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
@@ -143,7 +144,13 @@ export function EventDetailsDialog({
                       {statusLabel(event.status)}
                     </span>
 
-                    <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                    <span
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                        event.active
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-red-50 text-red-700"
+                      }`}
+                    >
                       {event.active ? "Активно" : "Неактивно"}
                     </span>
                   </div>
@@ -215,6 +222,20 @@ export function EventDetailsDialog({
                         </span>
                       </InfoItem>
                     )}
+
+                    {event.url && (
+                      <InfoItem label="Ссылка на мероприятие">
+                        <Link
+                          href={event.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-[#457B9D] hover:underline"
+                        >
+                          Перейти к мероприятию
+                          <ExternalLink size={14} />
+                        </Link>
+                      </InfoItem>
+                    )}
                   </div>
                 </section>
 
@@ -261,25 +282,11 @@ export function EventDetailsDialog({
                 </section>
 
                 <section className="rounded-xl border border-slate-200 bg-white p-5">
-                  <h3 className="font-semibold text-[#1D3557]">
-                    Ссылки и материалы
-                  </h3>
+                  <h3 className="font-semibold text-[#1D3557]">Материалы</h3>
 
                   <div className="mt-4 space-y-3">
-                    {event.url && (
-                      <a
-                        href={event.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-[#457B9D] hover:underline"
-                      >
-                        Ссылка на мероприятие
-                        <ExternalLink size={14} />
-                      </a>
-                    )}
-
                     {event.materialLinks.map((material) => (
-                      <a
+                      <Link
                         key={material.id}
                         href={material.url}
                         target="_blank"
@@ -288,12 +295,12 @@ export function EventDetailsDialog({
                       >
                         {material.name}
                         <ExternalLink size={14} />
-                      </a>
+                      </Link>
                     ))}
 
-                    {!event.url && event.materialLinks.length === 0 && (
+                    {event.materialLinks.length === 0 && (
                       <p className="text-sm text-slate-400">
-                        Ссылки и материалы не добавлены.
+                        Дополнительные материалы не добавлены.
                       </p>
                     )}
                   </div>
