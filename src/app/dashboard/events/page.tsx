@@ -186,11 +186,19 @@ export default function EventsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
+    <main className="bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <DashboardPageHeader
-          title="Кабинет администратора региона"
-          description="Управление муниципальными управлениями, образовательными организациями и учётными записями."
+          title={
+            user.role === "REGION_ADMIN"
+              ? "Кабинет администратора региона"
+              : "Кабинет администратора МСУ"
+          }
+          description={
+            user.role === "REGION_ADMIN"
+              ? "Управление муниципальными управлениями, образовательными организациями и учётными записями."
+              : "Управление образовательными организациями и заявками администраторов ОО."
+          }
           action={
             <button
               type="button"
