@@ -105,6 +105,16 @@ export default function EventsPage() {
   const [page, setPage] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
+  // Запускаем поиск после небольшой паузы во вводе текста.
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(0);
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
   const pageSize = 10;
 
   const canAccess = user?.role === "REGION_ADMIN" || user?.role === "MSU_ADMIN";
