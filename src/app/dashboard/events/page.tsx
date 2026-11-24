@@ -310,7 +310,7 @@ export default function EventsPage() {
             </div>
           ) : (
             <>
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-5 grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {eventsQuery.data.content.map((eventItem) => (
                   <article
                     key={eventItem.id}
@@ -323,21 +323,21 @@ export default function EventsPage() {
                         setSelectedEvent(eventItem);
                       }
                     }}
-                    className="flex cursor-pointer flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30 transition hover:border-[#457B9D]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/30"
+                    className="flex h-full min-h-97.5 cursor-pointer flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30 transition hover:border-[#457B9D]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/30"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-lg bg-[#E8F0F5] px-3 py-1.5 text-xs font-medium text-[#1D3557]">
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="min-w-0 truncate rounded-lg bg-[#E8F0F5] px-2 py-1.5 text-center text-xs font-medium text-[#1D3557]">
                         {levelLabel(eventItem.level)}
                       </span>
 
                       <span
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${statusClass(eventItem.status)}`}
+                        className={`min-w-0 truncate px-2 text-center rounded-lg py-1.5 text-xs font-medium ${statusClass(eventItem.status)}`}
                       >
                         {statusLabel(eventItem.status)}
                       </span>
 
                       <span
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                        className={`min-w-0 truncate px-2 text-center rounded-lg py-1.5 text-xs font-medium ${
                           eventItem.active
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-red-50 text-red-700"
@@ -347,15 +347,17 @@ export default function EventsPage() {
                       </span>
                     </div>
 
-                    <h2 className="mt-4 font-semibold leading-6 text-[#1D3557]">
+                    <h2 className="mt-4 line-clamp-2 min-h-12 font-semibold leading-6 text-[#1D3557]">
                       {eventItem.name}
                     </h2>
 
-                    {eventItem.description && (
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                        {eventItem.description}
-                      </p>
-                    )}
+                    <div className="mt-2 min-h-18">
+                      {eventItem.description && (
+                        <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+                          {eventItem.description}
+                        </p>
+                      )}
+                    </div>
 
                     <div className="mt-4 flex-1 space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
                       <p>
