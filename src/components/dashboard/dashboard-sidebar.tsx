@@ -37,7 +37,7 @@ const regionNavigation: {
   { id: "requests", label: "Заявки", icon: ClipboardCheck },
   { id: "accounts", label: "Администраторы МСУ", icon: UserRound },
   { id: "oo-accounts", label: "Администраторы ОО", icon: Building2 },
-  { id: "academic-years", label: "Учебные годы", icon: CalendarDays},
+  { id: "academic-years", label: "Учебные годы", icon: CalendarDays },
 ];
 
 const profileRoleNavigation: {
@@ -279,6 +279,28 @@ export function DashboardSidebar({
               </button>
             );
           })}
+
+          {(user?.role === "REGION_ADMIN" || user?.role === "MSU_ADMIN") && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                router.push("/dashboard/events");
+              }}
+              title={collapsed ? "Мероприятия" : undefined}
+              className={[
+                "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition",
+                collapsed ? "lg:justify-center lg:px-2" : "",
+                pathname === "/dashboard/events"
+                  ? "bg-[#E8F0F5] font-semibold text-[#1D3557]"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+              ].join(" ")}
+            >
+              <CalendarDays size={19} className="shrink-0" />
+              <span className={collapsed ? "lg:hidden" : ""}>Мероприятия</span>
+            </button>
+          )}
+
           {user?.role === "REGION_ADMIN" && (
             <button
               type="button"
