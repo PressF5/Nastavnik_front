@@ -100,7 +100,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "РџСЂРѕРёР·РѕС€Р»Р° РЅРµРїСЂРµРґРІРёРґРµРЅРЅР°СЏ РѕС€РёР±РєР°.";
+  return "Произошла непредвиденная ошибка.";
 }
 
 function fullName(user: AdminUser): string {
@@ -112,22 +112,22 @@ function fullName(user: AdminUser): string {
 function statusLabel(status: AdminUser["accountStatus"]): string {
   switch (status) {
     case "PENDING":
-      return "РћР¶РёРґР°РµС‚ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ";
+      return "Ожидает подтверждения";
     case "ACCEPTED":
-      return "РџРѕРґС‚РІРµСЂР¶РґРµРЅР°";
+      return "Подтверждена";
     case "REJECTED":
-      return "РћС‚РєР»РѕРЅРµРЅР°";
+      return "Отклонена";
   }
 }
 
 function academicYearStatusLabel(status: AcademicYear["status"]) {
   switch (status) {
     case "PLANNED":
-      return "Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅ";
+      return "Запланирован";
     case "ACTIVE":
-      return "РўРµРєСѓС‰РёР№";
+      return "Текущий";
     case "COMPLETED":
-      return "Р—Р°РІРµСЂС€С‘РЅ";
+      return "Завершён";
   }
 }
 
@@ -219,12 +219,12 @@ export function RegionAdminDashboard() {
     const name = editingMsuName.trim();
 
     if (!Number.isInteger(code) || code <= 0) {
-      toast.error("РљРѕРґ РњРЎРЈ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Рј С†РµР»С‹Рј С‡РёСЃР»РѕРј.");
+      toast.error("Код МСУ должен быть положительным целым числом.");
       return;
     }
 
     if (!name) {
-      toast.error("РќР°Р·РІР°РЅРёРµ РњРЎРЈ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј.");
+      toast.error("Название МСУ не может быть пустым.");
       return;
     }
 
@@ -237,7 +237,7 @@ export function RegionAdminDashboard() {
 
   function confirmDeleteMsu(msu: Msu) {
     const confirmed = window.confirm(
-      `РЈРґР°Р»РёС‚СЊ РњРЎРЈ В«${msu.name}В»? РЈРґР°Р»РµРЅРёРµ РЅРµРІРѕР·РјРѕР¶РЅРѕ, РµСЃР»Рё Рє РЅРµРјСѓ РїСЂРёРІСЏР·Р°РЅС‹ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё РёР»Рё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РњРЎРЈ.`,
+      `Удалить МСУ «${msu.name}»? Удаление невозможно, если к нему привязаны образовательные организации или администраторы МСУ.`,
     );
 
     if (confirmed) {
@@ -260,7 +260,7 @@ export function RegionAdminDashboard() {
     enabled: isInitialized && isRegionAdmin,
   });
 
-  // РЎРїРёСЃРѕРє РњРЎРЈ С‚РѕР»СЊРєРѕ С‚РµРєСѓС‰РµРіРѕ СЂРµРіРёРѕРЅР°.
+  // Список МСУ только текущего региона.
   const msusQuery = useQuery({
     queryKey: ["region-admin", "msus", msuSearch, msuPage, msuPageSize],
     queryFn: () =>
@@ -274,7 +274,7 @@ export function RegionAdminDashboard() {
     enabled: isInitialized && isRegionAdmin,
   });
 
-  // Р’СЃРµ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё С‚РµРєСѓС‰РµРіРѕ СЂРµРіРёРѕРЅР°.
+  // Все образовательные организации текущего региона.
   const organizationsQuery = useQuery({
     queryKey: [
       "region-admin",
@@ -297,7 +297,7 @@ export function RegionAdminDashboard() {
     enabled: isInitialized && isRegionAdmin,
   });
 
-  // Р—Р°СЏРІРєРё, РѕР¶РёРґР°СЋС‰РёРµ СЂРµС€РµРЅРёСЏ СЂРµРіРёРѕРЅР°Р»СЊРЅРѕРіРѕ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.
+  // Заявки, ожидающие решения регионального администратора.
   const pendingQuery = useQuery({
     queryKey: ["region-admin", "pending-msu-admins"],
     queryFn: () =>
@@ -312,7 +312,7 @@ export function RegionAdminDashboard() {
     enabled: isInitialized && isRegionAdmin,
   });
 
-  // Р—Р°СЏРІРєРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РћРћ, РѕР¶РёРґР°СЋС‰РёРµ СЂРµС€РµРЅРёСЏ СЂРµРіРёРѕРЅР°Р»СЊРЅРѕРіРѕ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.
+  // Заявки администраторов ОО, ожидающие решения регионального администратора.
   const pendingOoAdminsQuery = useQuery({
     queryKey: ["region-admin", "pending-oo-admins"],
     queryFn: () =>
@@ -327,7 +327,7 @@ export function RegionAdminDashboard() {
     enabled: isInitialized && isRegionAdmin,
   });
 
-  // РЎРїРёСЃРѕРє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РњРЎРЈ С‚РµРєСѓС‰РµРіРѕ СЂРµРіРёРѕРЅР°.
+  // Список администраторов МСУ текущего региона.
   const accountsQuery = useQuery({
     queryKey: ["region-admin", "msu-admins"],
     queryFn: () =>
@@ -387,14 +387,14 @@ export function RegionAdminDashboard() {
         body: JSON.stringify(request),
       }),
     onSuccess: async () => {
-      toast.success("РњРЎРЈ СЃРѕР·РґР°РЅРѕ.");
+      toast.success("МСУ создано.");
       setMsuName("");
       setMsuCode("");
       setShowCreateForm(false);
       await refreshDashboard();
     },
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РњРЎРЈ", {
+      toast.error("Не удалось создать МСУ", {
         description: getErrorMessage(error),
       });
     },
@@ -415,14 +415,14 @@ export function RegionAdminDashboard() {
         body: JSON.stringify({ code, name }),
       }),
     onSuccess: async () => {
-      toast.success("Р”Р°РЅРЅС‹Рµ РњРЎРЈ РѕР±РЅРѕРІР»РµРЅС‹.");
+      toast.success("Данные МСУ обновлены.");
       setEditingMsuId(null);
       setEditingMsuCode("");
       setEditingMsuName("");
       await refreshDashboard();
     },
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ РњРЎРЈ", {
+      toast.error("Не удалось обновить МСУ", {
         description: getErrorMessage(error),
       });
     },
@@ -434,12 +434,12 @@ export function RegionAdminDashboard() {
         method: "DELETE",
       }),
     onSuccess: async () => {
-      toast.success("РњРЎРЈ СѓРґР°Р»РµРЅРѕ.");
+      toast.success("МСУ удалено.");
       setEditingMsuId(null);
       await refreshDashboard();
     },
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РњРЎРЈ", {
+      toast.error("Не удалось удалить МСУ", {
         description: getErrorMessage(error),
       });
     },
@@ -459,13 +459,13 @@ export function RegionAdminDashboard() {
     onSuccess: async (_, variables) => {
       toast.success(
         variables.action === "approve"
-          ? "РЈС‡С‘С‚РЅР°СЏ Р·Р°РїРёСЃСЊ РїРѕРґС‚РІРµСЂР¶РґРµРЅР°."
-          : "Р—Р°СЏРІРєР° РѕС‚РєР»РѕРЅРµРЅР°.",
+          ? "Учётная запись подтверждена."
+          : "Заявка отклонена.",
       );
       await refreshDashboard();
     },
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±СЂР°Р±РѕС‚Р°С‚СЊ Р·Р°СЏРІРєСѓ", {
+      toast.error("Не удалось обработать заявку", {
         description: getErrorMessage(error),
       });
     },
@@ -480,8 +480,8 @@ export function RegionAdminDashboard() {
     onSuccess: async (_, variables) => {
       toast.success(
         variables.action === "block"
-          ? "РЈС‡С‘С‚РЅР°СЏ Р·Р°РїРёСЃСЊ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°."
-          : "РЈС‡С‘С‚РЅР°СЏ Р·Р°РїРёСЃСЊ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅР°.",
+          ? "Учётная запись заблокирована."
+          : "Учётная запись разблокирована.",
       );
 
       await Promise.all([
@@ -495,7 +495,7 @@ export function RegionAdminDashboard() {
     },
 
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ Р±Р»РѕРєРёСЂРѕРІРєСѓ", {
+      toast.error("Не удалось изменить блокировку", {
         description: getErrorMessage(error),
       });
     },
@@ -509,7 +509,7 @@ export function RegionAdminDashboard() {
       }),
 
     onSuccess: async () => {
-      toast.success("РЈС‡РµР±РЅС‹Р№ РіРѕРґ СЃРѕР·РґР°РЅ.");
+      toast.success("Учебный год создан.");
 
       setAcademicYearName("");
       setAcademicYearStartDate("");
@@ -522,7 +522,7 @@ export function RegionAdminDashboard() {
     },
 
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ", {
+      toast.error("Не удалось создать учебный год", {
         description: getErrorMessage(error),
       });
     },
@@ -542,7 +542,7 @@ export function RegionAdminDashboard() {
       }),
 
     onSuccess: async () => {
-      toast.success("РЈС‡РµР±РЅС‹Р№ РіРѕРґ РѕР±РЅРѕРІР»С‘РЅ.");
+      toast.success("Учебный год обновлён.");
       setEditingAcademicYearId(null);
 
       await queryClient.invalidateQueries({
@@ -551,7 +551,7 @@ export function RegionAdminDashboard() {
     },
 
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ", {
+      toast.error("Не удалось изменить учебный год", {
         description: getErrorMessage(error),
       });
     },
@@ -564,7 +564,7 @@ export function RegionAdminDashboard() {
       }),
 
     onSuccess: async () => {
-      toast.success("РЈС‡РµР±РЅС‹Р№ РіРѕРґ РѕРїСѓР±Р»РёРєРѕРІР°РЅ.");
+      toast.success("Учебный год опубликован.");
 
       await queryClient.invalidateQueries({
         queryKey: ["region-admin", "academic-years"],
@@ -572,7 +572,7 @@ export function RegionAdminDashboard() {
     },
 
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ", {
+      toast.error("Не удалось опубликовать учебный год", {
         description: getErrorMessage(error),
       });
     },
@@ -585,7 +585,7 @@ export function RegionAdminDashboard() {
       }),
 
     onSuccess: async () => {
-      toast.success("РЈС‡РµР±РЅС‹Р№ РіРѕРґ СѓРґР°Р»С‘РЅ.");
+      toast.success("Учебный год удалён.");
 
       await queryClient.invalidateQueries({
         queryKey: ["region-admin", "academic-years"],
@@ -593,7 +593,7 @@ export function RegionAdminDashboard() {
     },
 
     onError: (error) => {
-      toast.error("РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ", {
+      toast.error("Не удалось удалить учебный год", {
         description: getErrorMessage(error),
       });
     },
@@ -601,7 +601,7 @@ export function RegionAdminDashboard() {
 
   function confirmDeleteAcademicYear(year: AcademicYear) {
     const confirmed = window.confirm(
-      `РЈРґР°Р»РёС‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ В«${year.name}В»? Р•СЃР»Рё Рє РЅРµРјСѓ РїСЂРёРІСЏР·Р°РЅС‹ РЅР°СЃС‚Р°РІРЅРёС‡РµСЃРєРёРµ РїР°СЂС‹ РёР»Рё РїРѕРґС‚РІРµСЂР¶РґС‘РЅРЅРѕРµ СѓС‡Р°СЃС‚РёРµ РЅР°СЃС‚Р°РІРЅРёРєРѕРІ, СѓРґР°Р»РёС‚СЊ РµРіРѕ РЅРµР»СЊР·СЏ.`,
+      `Удалить учебный год «${year.name}»? Если к нему привязаны наставнические пары или подтверждённое участие наставников, удалить его нельзя.`,
     );
 
     if (confirmed) {
@@ -615,12 +615,12 @@ export function RegionAdminDashboard() {
     const name = academicYearName.trim();
 
     if (!name) {
-      toast.error("РЈРєР°Р¶Рё РЅР°Р·РІР°РЅРёРµ СѓС‡РµР±РЅРѕРіРѕ РіРѕРґР°.");
+      toast.error("Укажи название учебного года.");
       return;
     }
 
     if (academicYearStartDate >= academicYearEndDate) {
-      toast.error("Р”Р°С‚Р° РЅР°С‡Р°Р»Р° РґРѕР»Р¶РЅР° Р±С‹С‚СЊ СЂР°РЅСЊС€Рµ РґР°С‚С‹ РѕРєРѕРЅС‡Р°РЅРёСЏ.");
+      toast.error("Дата начала должна быть раньше даты окончания.");
       return;
     }
 
@@ -645,12 +645,12 @@ export function RegionAdminDashboard() {
     const name = msuName.trim();
 
     if (!Number.isInteger(code) || code <= 0) {
-      toast.error("РљРѕРґ РњРЎРЈ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Рј С†РµР»С‹Рј С‡РёСЃР»РѕРј.");
+      toast.error("Код МСУ должен быть положительным целым числом.");
       return;
     }
 
     if (!name) {
-      toast.error("РЈРєР°Р¶Рё РЅР°Р·РІР°РЅРёРµ РњРЎРЈ.");
+      toast.error("Укажи название МСУ.");
       return;
     }
 
@@ -659,7 +659,7 @@ export function RegionAdminDashboard() {
   if (!isInitialized || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <p className="text-sm text-slate-600">РџСЂРѕРІРµСЂСЏРµРј Р°РІС‚РѕСЂРёР·Р°С†РёСЋ...</p>
+        <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
       </main>
     );
   }
@@ -699,8 +699,8 @@ export function RegionAdminDashboard() {
     <main className="min-h-screen bg-[#F8F9FA] text-slate-900">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <DashboardPageHeader
-          title="РљР°Р±РёРЅРµС‚ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° СЂРµРіРёРѕРЅР°"
-          description="РЈРїСЂР°РІР»РµРЅРёРµ РјСѓРЅРёС†РёРїР°Р»СЊРЅС‹РјРё СѓРїСЂР°РІР»РµРЅРёСЏРјРё, РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹РјРё РѕСЂРіР°РЅРёР·Р°С†РёСЏРјРё Рё СѓС‡С‘С‚РЅС‹РјРё Р·Р°РїРёСЃСЏРјРё."
+          title="Кабинет администратора региона"
+          description="Управление муниципальными управлениями, образовательными организациями и учётными записями."
           action={
             <button
               type="button"
@@ -712,7 +712,7 @@ export function RegionAdminDashboard() {
                 size={16}
                 className={isRefreshing ? "animate-spin" : ""}
               />
-              РћР±РЅРѕРІРёС‚СЊ
+              Обновить
             </button>
           }
         />
@@ -728,8 +728,8 @@ export function RegionAdminDashboard() {
             className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"
           >
             <p>
-              РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‡Р°СЃС‚СЊ РґР°РЅРЅС‹С…. РџСЂРѕРІРµСЂСЊ backend Рё РїСЂР°РІР°
-              РґРѕСЃС‚СѓРїР°, Р·Р°С‚РµРј РїРѕРІС‚РѕСЂРё Р·Р°РїСЂРѕСЃ.
+              Не удалось загрузить часть данных. Проверь backend и права
+              доступа, затем повтори запрос.
             </p>
             <button
               type="button"
@@ -743,7 +743,7 @@ export function RegionAdminDashboard() {
               }}
               className="font-semibold underline"
             >
-              РџРѕРІС‚РѕСЂРёС‚СЊ
+              Повторить
             </button>
           </div>
         )}
@@ -753,12 +753,12 @@ export function RegionAdminDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-[#1D3557]">
-                  РЈРїСЂР°РІР»РµРЅРёРµ СѓС‡РµР±РЅС‹РјРё РіРѕРґР°РјРё
+                  Управление учебными годами
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  РЎРѕР·РґР°РЅРёРµ, РїСЂРѕСЃРјРѕС‚СЂ Рё СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅС‹С… СѓС‡РµР±РЅС‹С…
-                  РіРѕРґРѕРІ.
+                  Создание, просмотр и редактирование запланированных учебных
+                  годов.
                 </p>
               </div>
 
@@ -768,7 +768,7 @@ export function RegionAdminDashboard() {
                 className={buttonPrimary}
               >
                 {!showAcademicYearForm && <Plus size={17} />}
-                {showAcademicYearForm ? "РћС‚РјРµРЅР°" : "РЎРѕР·РґР°С‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ"}
+                {showAcademicYearForm ? "Отмена" : "Создать учебный год"}
               </button>
             </div>
 
@@ -778,7 +778,7 @@ export function RegionAdminDashboard() {
                 className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3"
               >
                 <label className="text-sm font-medium text-slate-700 sm:col-span-3">
-                  РќР°Р·РІР°РЅРёРµ СѓС‡РµР±РЅРѕРіРѕ РіРѕРґР°
+                  Название учебного года
                   <input
                     className={inputClass}
                     type="text"
@@ -788,12 +788,12 @@ export function RegionAdminDashboard() {
                     onChange={(event) =>
                       setAcademicYearName(event.target.value)
                     }
-                    placeholder="РќР°РїСЂРёРјРµСЂ, 2026вЂ“2027"
+                    placeholder="Например, 2026–2027"
                   />
                 </label>
 
                 <label className="text-sm font-medium text-slate-700">
-                  Р”Р°С‚Р° РЅР°С‡Р°Р»Р°
+                  Дата начала
                   <input
                     className={inputClass}
                     type="date"
@@ -806,7 +806,7 @@ export function RegionAdminDashboard() {
                 </label>
 
                 <label className="text-sm font-medium text-slate-700">
-                  Р”Р°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ
+                  Дата окончания
                   <input
                     className={inputClass}
                     type="date"
@@ -826,27 +826,27 @@ export function RegionAdminDashboard() {
                     className={`${buttonPrimary} w-full`}
                   >
                     {createAcademicYearMutation.isPending
-                      ? "РЎРѕР·РґР°РЅРёРµ..."
-                      : "РЎРѕР·РґР°С‚СЊ"}
+                      ? "Создание..."
+                      : "Создать"}
                   </button>
                 </div>
 
                 <p className="text-xs text-slate-500 sm:col-span-3">
-                  РњРѕР¶РЅРѕ СЃРѕР·РґР°С‚СЊ СѓС‡РµР±РЅС‹Р№ РіРѕРґ Р·Р°РґРЅРёРј С‡РёСЃР»РѕРј. РћРЅ СЃСЂР°Р·Сѓ РїРѕР»СѓС‡РёС‚
-                  СЃС‚Р°С‚СѓСЃ В«РўРµРєСѓС‰РёР№В», РµСЃР»Рё СЃРµРіРѕРґРЅСЏС€РЅСЏСЏ РґР°С‚Р° РІС…РѕРґРёС‚ РІ СѓРєР°Р·Р°РЅРЅС‹Р№
-                  РїРµСЂРёРѕРґ. РџРµСЂРµСЃРµС‡РµРЅРёРµ СЃ РґСЂСѓРіРёРјРё СѓС‡РµР±РЅС‹РјРё РіРѕРґР°РјРё Р·Р°РїСЂРµС‰РµРЅРѕ.
+                  Можно создать учебный год задним числом. Он сразу получит
+                  статус «Текущий», если сегодняшняя дата входит в указанный
+                  период. Пересечение с другими учебными годами запрещено.
                 </p>
               </form>
             )}
 
             {academicYearsQuery.isPending ? (
               <p className="py-10 text-sm text-slate-500">
-                Р—Р°РіСЂСѓР¶Р°РµРј СѓС‡РµР±РЅС‹Рµ РіРѕРґС‹...
+                Загружаем учебные годы...
               </p>
             ) : academicYearsQuery.isError ? (
               <div className="py-8">
                 <p role="alert" className="text-sm text-red-700">
-                  РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СѓС‡РµР±РЅС‹Рµ РіРѕРґС‹.
+                  Не удалось загрузить учебные годы.
                 </p>
 
                 <button
@@ -854,12 +854,12 @@ export function RegionAdminDashboard() {
                   onClick={() => void academicYearsQuery.refetch()}
                   className={`${buttonSecondary} mt-3`}
                 >
-                  РџРѕРІС‚РѕСЂРёС‚СЊ
+                  Повторить
                 </button>
               </div>
             ) : !academicYearsQuery.data?.length ? (
               <p className="py-10 text-sm text-slate-500">
-                РЈС‡РµР±РЅС‹Рµ РіРѕРґС‹ РµС‰С‘ РЅРµ СЃРѕР·РґР°РЅС‹.
+                Учебные годы ещё не созданы.
               </p>
             ) : (
               <div className="mt-6 space-y-3">
@@ -887,7 +887,7 @@ export function RegionAdminDashboard() {
                             const name = editingAcademicYearName.trim();
 
                             if (!name) {
-                              toast.error("РЈРєР°Р¶Рё РЅР°Р·РІР°РЅРёРµ СѓС‡РµР±РЅРѕРіРѕ РіРѕРґР°.");
+                              toast.error("Укажи название учебного года.");
                               return;
                             }
 
@@ -896,7 +896,7 @@ export function RegionAdminDashboard() {
                               editingAcademicYearEndDate
                             ) {
                               toast.error(
-                                "Р”Р°С‚Р° РЅР°С‡Р°Р»Р° РґРѕР»Р¶РЅР° Р±С‹С‚СЊ СЂР°РЅСЊС€Рµ РґР°С‚С‹ РѕРєРѕРЅС‡Р°РЅРёСЏ.",
+                                "Дата начала должна быть раньше даты окончания.",
                               );
                               return;
                             }
@@ -913,7 +913,7 @@ export function RegionAdminDashboard() {
                           className="grid gap-4 sm:grid-cols-3"
                         >
                           <label className="text-sm font-medium text-slate-700 sm:col-span-3">
-                            РќР°Р·РІР°РЅРёРµ
+                            Название
                             <input
                               className={inputClass}
                               type="text"
@@ -927,7 +927,7 @@ export function RegionAdminDashboard() {
                           </label>
 
                           <label className="text-sm font-medium text-slate-700">
-                            Р”Р°С‚Р° РЅР°С‡Р°Р»Р°
+                            Дата начала
                             <input
                               className={inputClass}
                               type="date"
@@ -942,7 +942,7 @@ export function RegionAdminDashboard() {
                           </label>
 
                           <label className="text-sm font-medium text-slate-700">
-                            Р”Р°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ
+                            Дата окончания
                             <input
                               className={inputClass}
                               type="date"
@@ -963,8 +963,8 @@ export function RegionAdminDashboard() {
                               className={`${buttonPrimary} flex-1`}
                             >
                               {updateAcademicYearMutation.isPending
-                                ? "РЎРѕС…СЂР°РЅРµРЅРёРµ..."
-                                : "РЎРѕС…СЂР°РЅРёС‚СЊ"}
+                                ? "Сохранение..."
+                                : "Сохранить"}
                             </button>
 
                             <button
@@ -972,7 +972,7 @@ export function RegionAdminDashboard() {
                               onClick={() => setEditingAcademicYearId(null)}
                               className={buttonSecondary}
                             >
-                              РћС‚РјРµРЅР°
+                              Отмена
                             </button>
                           </div>
                         </form>
@@ -997,7 +997,7 @@ export function RegionAdminDashboard() {
                                     : "bg-amber-50 text-amber-700"
                                 }`}
                               >
-                                {year.published ? "РћРїСѓР±Р»РёРєРѕРІР°РЅ" : "Р§РµСЂРЅРѕРІРёРє"}
+                                {year.published ? "Опубликован" : "Черновик"}
                               </span>
                             </div>
 
@@ -1020,7 +1020,7 @@ export function RegionAdminDashboard() {
                                     className={buttonSecondary}
                                   >
                                     <Pencil size={15} />
-                                    Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
+                                    Редактировать
                                   </button>
                                 ) : (
                                   <>
@@ -1032,8 +1032,7 @@ export function RegionAdminDashboard() {
                                       }}
                                       className={buttonSecondary}
                                     >
-                                      <Pencil size={15} />
-                                      РР·РјРµРЅРёС‚СЊ
+                                      <Pencil size={15} />� зменить
                                     </button>
 
                                     {canDelete && (
@@ -1048,7 +1047,7 @@ export function RegionAdminDashboard() {
                                         className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
                                       >
                                         <Trash2 size={15} />
-                                        РЈРґР°Р»РёС‚СЊ
+                                        Удалить
                                       </button>
                                     )}
 
@@ -1059,7 +1058,7 @@ export function RegionAdminDashboard() {
                                       }
                                       className={buttonSecondary}
                                     >
-                                      РћС‚РјРµРЅР°
+                                      Отмена
                                     </button>
                                   </>
                                 )}
@@ -1076,8 +1075,8 @@ export function RegionAdminDashboard() {
                                 className={buttonPrimary}
                               >
                                 {publishAcademicYearMutation.isPending
-                                  ? "РџСѓР±Р»РёРєР°С†РёСЏ..."
-                                  : "РћРїСѓР±Р»РёРєРѕРІР°С‚СЊ"}
+                                  ? "Публикация..."
+                                  : "Опубликовать"}
                               </button>
                             )}
                           </div>
@@ -1107,59 +1106,59 @@ export function RegionAdminDashboard() {
             />
             <section>
               <h3 className="text-lg font-semibold text-[#1D3557]">
-                Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ РєР°Р±РёРЅРµС‚
+                Добро пожаловать в кабинет
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Р—РґРµСЃСЊ С‚С‹ СѓРїСЂР°РІР»СЏРµС€СЊ РњРЎРЈ СЃРІРѕРµРіРѕ СЂРµРіРёРѕРЅР° Рё РїРѕРґС‚РІРµСЂР¶РґР°РµС€СЊ
-                СЂРµРіРёСЃС‚СЂР°С†РёРё РёС… Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ.
+                Здесь ты управляешь МСУ своего региона и подтверждаешь
+                регистрации их администраторов.
               </p>
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <StatCard
-                title="РњРЎРЈ РІ СЂРµРіРёРѕРЅРµ"
-                value={msusQuery.isPending ? "вЂ”" : totalMsus}
-                description="РЎРѕР·РґР°РЅРЅС‹Рµ РјСѓРЅРёС†РёРїР°Р»СЊРЅС‹Рµ СѓРїСЂР°РІР»РµРЅРёСЏ"
+                title="МСУ в регионе"
+                value={msusQuery.isPending ? "—" : totalMsus}
+                description="Созданные муниципальные управления"
                 icon={<Building2 size={21} />}
               />
 
               <StatCard
-                title="РћРћ РІ СЂРµРіРёРѕРЅРµ"
-                value={organizationsQuery.isPending ? "вЂ”" : totalOrganizations}
-                description="Р’СЃРµ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё СЂРµРіРёРѕРЅР°"
+                title="ОО в регионе"
+                value={organizationsQuery.isPending ? "—" : totalOrganizations}
+                description="Все образовательные организации региона"
                 icon={<Building2 size={21} />}
               />
 
               <StatCard
-                title="РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РњРЎРЈ"
+                title="Администраторы МСУ"
                 value={
                   accountsQuery.isPending
-                    ? "вЂ”"
+                    ? "—"
                     : (accountsQuery.data?.totalElements ?? 0)
                 }
-                description="РЈС‡С‘С‚РЅС‹Рµ Р·Р°РїРёСЃРё РІ С‚РІРѕС‘Рј СЂРµРіРёРѕРЅРµ"
+                description="Учётные записи в твоём регионе"
                 icon={<Users size={21} />}
               />
 
               <StatCard
-                title="РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РћРћ"
+                title="Администраторы ОО"
                 value={
                   ooAccountsQuery.isPending
-                    ? "вЂ”"
+                    ? "—"
                     : (ooAccountsQuery.data?.totalElements ?? 0)
                 }
-                description="РЈС‡С‘С‚РЅС‹Рµ Р·Р°РїРёСЃРё РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹С… РѕСЂРіР°РЅРёР·Р°С†РёР№ СЂРµРіРёРѕРЅР°"
+                description="Учётные записи образовательных организаций региона"
                 icon={<Users size={21} />}
               />
 
               <StatCard
-                title="РћР¶РёРґР°СЋС‚ СЂРµС€РµРЅРёСЏ"
+                title="Ожидают решения"
                 value={
                   pendingQuery.isPending || pendingOoAdminsQuery.isPending
-                    ? "вЂ”"
+                    ? "—"
                     : totalPendingAdmins
                 }
-                description="Р—Р°СЏРІРєРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РњРЎРЈ Рё РћРћ"
+                description="Заявки администраторов МСУ и ОО"
                 icon={<ClipboardCheck size={21} />}
               />
             </section>
@@ -1168,10 +1167,10 @@ export function RegionAdminDashboard() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-[#1D3557]">
-                    РўСЂРµР±СѓСЋС‚ РІРЅРёРјР°РЅРёСЏ
+                    Требуют внимания
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Р—Р°СЏРІРєРё, РєРѕС‚РѕСЂС‹Рµ РµС‰С‘ РЅРµ РѕР±СЂР°Р±РѕС‚Р°РЅС‹
+                    Заявки, которые ещё не обработаны
                   </p>
                 </div>
                 <button
@@ -1179,17 +1178,17 @@ export function RegionAdminDashboard() {
                   onClick={() => setSection("requests")}
                   className="text-sm font-semibold text-[#457B9D] hover:underline"
                 >
-                  Р’СЃРµ Р·Р°СЏРІРєРё
+                  Все заявки
                 </button>
               </div>
 
               {pendingQuery.isPending ? (
                 <p className="py-8 text-sm text-slate-500">
-                  Р—Р°РіСЂСѓР¶Р°РµРј Р·Р°СЏРІРєРё...
+                  Загружаем заявки...
                 </p>
               ) : pendingAdmins.length === 0 ? (
                 <p className="py-8 text-sm text-slate-500">
-                  РќРµС‚ Р·Р°СЏРІРѕРє, РѕР¶РёРґР°СЋС‰РёС… РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ.
+                  Нет заявок, ожидающих подтверждения.
                 </p>
               ) : (
                 <div className="mt-4 divide-y divide-slate-100">
@@ -1219,10 +1218,10 @@ export function RegionAdminDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="font-semibold text-[#1D3557]">
-                  РњСѓРЅРёС†РёРїР°Р»СЊРЅС‹Рµ СѓРїСЂР°РІР»РµРЅРёСЏ
+                  Муниципальные управления
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Р’СЃРµ РњРЎРЈ, РѕС‚РЅРѕСЃСЏС‰РёРµСЃСЏ Рє С‚РІРѕРµРјСѓ СЂРµРіРёРѕРЅСѓ
+                  Все МСУ, относящиеся к твоему региону
                 </p>
               </div>
 
@@ -1232,7 +1231,7 @@ export function RegionAdminDashboard() {
                 className={buttonPrimary}
               >
                 <Plus size={17} />
-                {showCreateForm ? "РћС‚РјРµРЅР°" : "РЎРѕР·РґР°С‚СЊ РњРЎРЈ"}
+                {showCreateForm ? "Отмена" : "Создать МСУ"}
               </button>
             </div>
 
@@ -1242,7 +1241,7 @@ export function RegionAdminDashboard() {
                 className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2"
               >
                 <label className="text-sm font-medium text-slate-700">
-                  РљРѕРґ РњРЎРЈ
+                  Код МСУ
                   <input
                     className={inputClass}
                     type="number"
@@ -1251,12 +1250,12 @@ export function RegionAdminDashboard() {
                     required
                     value={msuCode}
                     onChange={(event) => setMsuCode(event.target.value)}
-                    placeholder="РќР°РїСЂРёРјРµСЂ, 101"
+                    placeholder="Например, 101"
                   />
                 </label>
 
                 <label className="text-sm font-medium text-slate-700">
-                  РќР°Р·РІР°РЅРёРµ РњРЎРЈ
+                  Название МСУ
                   <input
                     className={inputClass}
                     type="text"
@@ -1264,14 +1263,14 @@ export function RegionAdminDashboard() {
                     required
                     value={msuName}
                     onChange={(event) => setMsuName(event.target.value)}
-                    placeholder="Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ"
+                    placeholder="Введите название"
                   />
                 </label>
 
                 <div className="sm:col-span-2">
                   <p className="mb-3 text-xs text-slate-500">
-                    Р РµРіРёРѕРЅ Р±СѓРґРµС‚ РЅР°Р·РЅР°С‡РµРЅ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРѕ СѓС‡С‘С‚РЅРѕР№ Р·Р°РїРёСЃРё
-                    Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.
+                    Регион будет назначен автоматически по учётной записи
+                    администратора.
                   </p>
                   <button
                     type="submit"
@@ -1279,8 +1278,8 @@ export function RegionAdminDashboard() {
                     className={buttonPrimary}
                   >
                     {createMsuMutation.isPending
-                      ? "РЎРѕР·РґР°С‘Рј..."
-                      : "РЎРѕС…СЂР°РЅРёС‚СЊ РњРЎРЈ"}
+                      ? "Создаём..."
+                      : "Сохранить МСУ"}
                   </button>
                 </div>
               </form>
@@ -1299,7 +1298,7 @@ export function RegionAdminDashboard() {
                     setMsuSearch(event.target.value);
                     setMsuPage(0);
                   }}
-                  placeholder="РџРѕРёСЃРє РїРѕ РєРѕРґСѓ РёР»Рё РЅР°Р·РІР°РЅРёСЋ РњРЎРЈ"
+                  placeholder="Поиск по коду или названию МСУ"
                   className={`${inputClass} mt-0 pl-9`}
                 />
               </label>
@@ -1315,32 +1314,32 @@ export function RegionAdminDashboard() {
                 >
                   <Pencil size={16} />
                   {msuEditMode
-                    ? "Р—Р°РІРµСЂС€РёС‚СЊ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ"
-                    : "Р РµР¶РёРј СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ"}
+                    ? "Завершить редактирование"
+                    : "Режим редактирования"}
                 </button>
               </div>
             </div>
 
             {msusQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">
-                Р—Р°РіСЂСѓР¶Р°РµРј СЃРїРёСЃРѕРє РњРЎРЈ...
+                Загружаем список МСУ...
               </p>
             ) : msusQuery.isError ? (
               <p role="alert" className="py-8 text-sm text-red-700">
-                РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє РњРЎРЈ.
+                Не удалось загрузить список МСУ.
               </p>
             ) : msus.length === 0 ? (
               <div className="py-12 text-center">
                 <Building2 size={32} className="mx-auto text-slate-300" />
                 <p className="mt-3 font-medium text-slate-800">
                   {msuSearch
-                    ? "РњРЎРЈ РїРѕ РІР°С€РµРјСѓ Р·Р°РїСЂРѕСЃСѓ РЅРµ РЅР°Р№РґРµРЅС‹"
-                    : "РњРЎРЈ РµС‰С‘ РЅРµ СЃРѕР·РґР°РЅС‹"}
+                    ? "МСУ по вашему запросу не найдены"
+                    : "МСУ ещё не созданы"}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
                   {msuSearch
-                    ? "РР·РјРµРЅРёС‚Рµ РїРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ."
-                    : "РЎРѕР·РґР°Р№С‚Рµ РїРµСЂРІРѕРµ РњРЎРЈ, С‡С‚РѕР±С‹ РїСЂРѕРґРѕР»Р¶РёС‚СЊ СЂР°Р±РѕС‚Сѓ."}
+                    ? "� змените поисковый запрос."
+                    : "Создайте первое МСУ, чтобы продолжить работу."}
                 </p>
               </div>
             ) : (
@@ -1357,15 +1356,15 @@ export function RegionAdminDashboard() {
                       >
                         <div>
                           <h4 className="font-semibold text-[#1D3557]">
-                            Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РњРЎРЈ
+                            Редактирование МСУ
                           </h4>
                           <p className="mt-1 text-xs text-slate-500">
-                            РР·РјРµРЅРё РєРѕРґ РёР»Рё РЅР°Р·РІР°РЅРёРµ РјСѓРЅРёС†РёРїР°Р»СЊРЅРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ
+                            � змени код или название муниципального управления
                           </p>
                         </div>
 
                         <label className="text-sm font-medium text-slate-600">
-                          РљРѕРґ РњРЎРЈ
+                          Код МСУ
                           <input
                             type="number"
                             min="1"
@@ -1380,7 +1379,7 @@ export function RegionAdminDashboard() {
                         </label>
 
                         <label className="text-sm font-medium text-slate-600">
-                          РќР°Р·РІР°РЅРёРµ РњРЎРЈ
+                          Название МСУ
                           <input
                             type="text"
                             maxLength={500}
@@ -1400,8 +1399,8 @@ export function RegionAdminDashboard() {
                             className={buttonPrimary}
                           >
                             {updateMsuMutation.isPending
-                              ? "РЎРѕС…СЂР°РЅСЏРµРј..."
-                              : "РЎРѕС…СЂР°РЅРёС‚СЊ"}
+                              ? "Сохраняем..."
+                              : "Сохранить"}
                           </button>
 
                           <button
@@ -1410,7 +1409,7 @@ export function RegionAdminDashboard() {
                             disabled={updateMsuMutation.isPending}
                             className={buttonSecondary}
                           >
-                            РћС‚РјРµРЅР°
+                            Отмена
                           </button>
                         </div>
                       </form>
@@ -1423,7 +1422,7 @@ export function RegionAdminDashboard() {
                             </div>
 
                             <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                              РљРѕРґ: {msu.code}
+                              Код: {msu.code}
                             </span>
                           </div>
 
@@ -1438,7 +1437,7 @@ export function RegionAdminDashboard() {
                           </button>
 
                           <p className="mt-1 text-sm text-slate-500">
-                            РњСѓРЅРёС†РёРїР°Р»СЊРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ
+                            Муниципальное управление
                           </p>
                         </div>
 
@@ -1448,10 +1447,10 @@ export function RegionAdminDashboard() {
                               type="button"
                               onClick={() => startEditingMsu(msu)}
                               className={buttonSecondary}
-                              aria-label={`Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ ${msu.name}`}
+                              aria-label={`Редактировать ${msu.name}`}
                             >
                               <Pencil size={15} />
-                              Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
+                              Редактировать
                             </button>
 
                             <button
@@ -1459,10 +1458,10 @@ export function RegionAdminDashboard() {
                               onClick={() => confirmDeleteMsu(msu)}
                               disabled={deleteMsuMutation.isPending}
                               className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`РЈРґР°Р»РёС‚СЊ ${msu.name}`}
+                              aria-label={`Удалить ${msu.name}`}
                             >
                               <Trash2 size={15} />
-                              РЈРґР°Р»РёС‚СЊ
+                              Удалить
                             </button>
                           </div>
                         )}
@@ -1475,7 +1474,7 @@ export function RegionAdminDashboard() {
 
             <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                <label htmlFor="msu-page-size">Р—Р°РїРёСЃРµР№ РЅР° СЃС‚СЂР°РЅРёС†Рµ:</label>
+                <label htmlFor="msu-page-size">Записей на странице:</label>
                 <select
                   id="msu-page-size"
                   value={msuPageSize}
@@ -1490,7 +1489,7 @@ export function RegionAdminDashboard() {
                   <option value={50}>50</option>
                 </select>
 
-                <span>Р’СЃРµРіРѕ: {totalMsus}</span>
+                <span>Всего: {totalMsus}</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1501,11 +1500,11 @@ export function RegionAdminDashboard() {
                   className={buttonSecondary}
                 >
                   <ChevronLeft size={16} />
-                  РќР°Р·Р°Рґ
+                  Назад
                 </button>
 
                 <span className="min-w-24 text-center text-sm text-slate-600">
-                  РЎС‚СЂР°РЅРёС†Р° {totalMsuPages === 0 ? 0 : msuPage + 1} РёР·{" "}
+                  Страница {totalMsuPages === 0 ? 0 : msuPage + 1} из{" "}
                   {totalMsuPages}
                 </span>
 
@@ -1525,7 +1524,7 @@ export function RegionAdminDashboard() {
                   }
                   className={buttonSecondary}
                 >
-                  Р”Р°Р»РµРµ
+                  Далее
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -1537,11 +1536,11 @@ export function RegionAdminDashboard() {
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div>
               <h3 className="font-semibold text-[#1D3557]">
-                РћР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё СЂРµРіРёРѕРЅР°
+                Образовательные организации региона
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Р’СЃРµ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё, РѕС‚РЅРѕСЃСЏС‰РёРµСЃСЏ Рє РњРЎРЈ С‚РІРѕРµРіРѕ
-                СЂРµРіРёРѕРЅР°
+                Все образовательные организации, относящиеся к МСУ твоего
+                региона
               </p>
             </div>
 
@@ -1558,7 +1557,7 @@ export function RegionAdminDashboard() {
                     setOrganizationSearch(event.target.value);
                     setOrganizationPage(0);
                   }}
-                  placeholder="РџРѕРёСЃРє РїРѕ РєРѕРґСѓ РёР»Рё РЅР°Р·РІР°РЅРёСЋ РћРћ"
+                  placeholder="Поиск по коду или названию ОО"
                   className={`${inputClass} mt-0 pl-9`}
                 />
               </label>
@@ -1566,27 +1565,27 @@ export function RegionAdminDashboard() {
 
             {organizationsQuery.isPending ? (
               <p className="py-10 text-center text-sm text-slate-500">
-                Р—Р°РіСЂСѓР¶Р°РµРј РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё...
+                Загружаем образовательные организации...
               </p>
             ) : organizationsQuery.isError ? (
               <p
                 role="alert"
                 className="py-10 text-center text-sm text-red-700"
               >
-                РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё.
+                Не удалось загрузить образовательные организации.
               </p>
             ) : organizations.length === 0 ? (
               <div className="py-12 text-center">
                 <Building2 size={32} className="mx-auto text-slate-300" />
                 <p className="mt-3 font-medium text-slate-800">
                   {organizationSearch
-                    ? "РћРћ РїРѕ РІР°С€РµРјСѓ Р·Р°РїСЂРѕСЃСѓ РЅРµ РЅР°Р№РґРµРЅС‹"
-                    : "Р’ СЂРµРіРёРѕРЅРµ РїРѕРєР° РЅРµС‚ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹С… РѕСЂРіР°РЅРёР·Р°С†РёР№"}
+                    ? "ОО по вашему запросу не найдены"
+                    : "В регионе пока нет образовательных организаций"}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
                   {organizationSearch
-                    ? "РР·РјРµРЅРёС‚Рµ РїРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ."
-                    : "РЎРѕР·РґР°Р№С‚Рµ РћРћ РІ РѕРґРЅРѕРј РёР· РњРЎРЈ СЂРµРіРёРѕРЅР°."}
+                    ? "� змените поисковый запрос."
+                    : "Создайте ОО в одном из МСУ региона."}
                 </p>
               </div>
             ) : (
@@ -1603,7 +1602,7 @@ export function RegionAdminDashboard() {
                         </div>
 
                         <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                          РљРѕРґ: {organization.code}
+                          Код: {organization.code}
                         </span>
                       </div>
 
@@ -1614,7 +1613,7 @@ export function RegionAdminDashboard() {
 
                         <div className="mt-4 border-t border-slate-100 pt-3">
                           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                            РњСѓРЅРёС†РёРїР°Р»СЊРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ
+                            Муниципальное управление
                           </p>
 
                           <p className="mt-1 text-sm font-medium text-slate-700">
@@ -1629,7 +1628,7 @@ export function RegionAdminDashboard() {
                 <div className="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                     <label htmlFor="organization-page-size">
-                      Р—Р°РїРёСЃРµР№ РЅР° СЃС‚СЂР°РЅРёС†Рµ:
+                      Записей на странице:
                     </label>
                     <select
                       id="organization-page-size"
@@ -1645,7 +1644,7 @@ export function RegionAdminDashboard() {
                       <option value={50}>50</option>
                     </select>
 
-                    <span>Р’СЃРµРіРѕ: {totalOrganizations}</span>
+                    <span>Всего: {totalOrganizations}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1660,15 +1659,15 @@ export function RegionAdminDashboard() {
                       className={buttonSecondary}
                     >
                       <ChevronLeft size={16} />
-                      РќР°Р·Р°Рґ
+                      Назад
                     </button>
 
                     <span className="min-w-24 text-center text-sm text-slate-600">
-                      РЎС‚СЂР°РЅРёС†Р°{" "}
+                      Страница{" "}
                       {organizationsQuery.data.totalPages === 0
                         ? 0
                         : organizationPage + 1}{" "}
-                      РёР· {organizationsQuery.data.totalPages}
+                      из {organizationsQuery.data.totalPages}
                     </span>
 
                     <button
@@ -1689,7 +1688,7 @@ export function RegionAdminDashboard() {
                       }
                       className={buttonSecondary}
                     >
-                      Р”Р°Р»РµРµ
+                      Далее
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -1703,21 +1702,21 @@ export function RegionAdminDashboard() {
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div>
               <h3 className="font-semibold text-[#1D3557]">
-                Р—Р°СЏРІРєРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РњРЎРЈ Рё РћРћ
+                Заявки администраторов МСУ и ОО
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                РџСЂРѕРІРµСЂСЏР№ РґР°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ Рё РїРѕРґС‚РІРµСЂР¶РґР°Р№ СЂРµРіРёСЃС‚СЂР°С†РёРё РІ
-                РїСЂРµРґРµР»Р°С… СЃРІРѕРµРіРѕ СЂРµРіРёРѕРЅР°.
+                Проверяй данные пользователей и подтверждай регистрации в
+                пределах своего региона.
               </p>
             </div>
 
             {pendingQuery.isPending || pendingOoAdminsQuery.isPending ? (
-              <p className="py-8 text-sm text-slate-500">Р—Р°РіСЂСѓР¶Р°РµРј Р·Р°СЏРІРєРё...</p>
+              <p className="py-8 text-sm text-slate-500">Загружаем заявки...</p>
             ) : pendingQuery.isError || pendingOoAdminsQuery.isError ? (
               <div className="py-8">
                 <p role="alert" className="text-sm text-red-700">
-                  РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє Р·Р°СЏРІРѕРє.
+                  Не удалось загрузить список заявок.
                 </p>
 
                 <button
@@ -1728,12 +1727,12 @@ export function RegionAdminDashboard() {
                   }}
                   className={`${buttonSecondary} mt-3`}
                 >
-                  РџРѕРІС‚РѕСЂРёС‚СЊ
+                  Повторить
                 </button>
               </div>
             ) : pendingAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
-                Р—Р°СЏРІРѕРє РЅР° РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РЅРµС‚.
+                Заявок на подтверждение нет.
               </p>
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1744,21 +1743,21 @@ export function RegionAdminDashboard() {
                     icon={<Users size={22} />}
                     roleLabel={
                       admin.role === "MSU_ADMIN"
-                        ? "РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РњРЎРЈ"
-                        : "РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅРѕР№ РѕСЂРіР°РЅРёР·Р°С†РёРё"
+                        ? "Администратор МСУ"
+                        : "Администратор образовательной организации"
                     }
                     details={[
                       {
-                        label: "РњСѓРЅРёС†РёРїР°Р»СЊРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ",
-                        value: admin.msuName ?? "РќРµ СѓРєР°Р·Р°РЅРѕ",
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
                       },
                       ...(admin.role === "OO_ADMIN"
                         ? [
                             {
-                              label: "РћР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅР°СЏ РѕСЂРіР°РЅРёР·Р°С†РёСЏ",
+                              label: "Образовательная организация",
                               value:
                                 admin.educationalOrganizationName ??
-                                "РќРµ СѓРєР°Р·Р°РЅР°",
+                                "Не указана",
                             },
                           ]
                         : []),
@@ -1785,7 +1784,7 @@ export function RegionAdminDashboard() {
               pendingOoAdminsQuery.data &&
               totalPendingAdmins > pendingAdmins.length && (
                 <p className="mt-4 text-sm text-slate-500">
-                  РџРѕРєР°Р·Р°РЅС‹ РїРµСЂРІС‹Рµ {pendingAdmins.length} Р·Р°СЏРІРѕРє РёР·{" "}
+                  Показаны первые {pendingAdmins.length} заявок из{" "}
                   {totalPendingAdmins}.
                 </p>
               )}
@@ -1796,23 +1795,23 @@ export function RegionAdminDashboard() {
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div>
               <h3 className="font-semibold text-[#1D3557]">
-                РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅС‹С… РѕСЂРіР°РЅРёР·Р°С†РёР№
+                Администраторы образовательных организаций
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                РЈРїСЂР°РІР»РµРЅРёРµ СѓС‡С‘С‚РЅС‹РјРё Р·Р°РїРёСЃСЏРјРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РћРћ РІ РїСЂРµРґРµР»Р°С…
-                С‚РІРѕРµРіРѕ СЂРµРіРёРѕРЅР°.
+                Управление учётными записями администраторов ОО в пределах
+                твоего региона.
               </p>
             </div>
 
             {ooAccountsQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">
-                Р—Р°РіСЂСѓР¶Р°РµРј СЃРїРёСЃРѕРє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РћРћ...
+                Загружаем список администраторов ОО...
               </p>
             ) : ooAccountsQuery.isError ? (
               <div className="py-8">
                 <p role="alert" className="text-sm text-red-700">
-                  РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РћРћ.
+                  Не удалось загрузить список администраторов ОО.
                 </p>
 
                 <button
@@ -1820,12 +1819,12 @@ export function RegionAdminDashboard() {
                   onClick={() => void ooAccountsQuery.refetch()}
                   className={`${buttonSecondary} mt-3`}
                 >
-                  РџРѕРІС‚РѕСЂРёС‚СЊ
+                  Повторить
                 </button>
               </div>
             ) : allOoAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
-                РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РћРћ РїРѕРєР° РЅРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅС‹.
+                Администраторы ОО пока не зарегистрированы.
               </p>
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1834,16 +1833,16 @@ export function RegionAdminDashboard() {
                     key={admin.id}
                     user={admin}
                     icon={<Building2 size={22} />}
-                    roleLabel="РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РѕР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅРѕР№ РѕСЂРіР°РЅРёР·Р°С†РёРё"
+                    roleLabel="Администратор образовательной организации"
                     details={[
                       {
-                        label: "РћР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅР°СЏ РѕСЂРіР°РЅРёР·Р°С†РёСЏ",
+                        label: "Образовательная организация",
                         value:
-                          admin.educationalOrganizationName ?? "РќРµ СѓРєР°Р·Р°РЅР°",
+                          admin.educationalOrganizationName ?? "Не указана",
                       },
                       {
-                        label: "РњСѓРЅРёС†РёРїР°Р»СЊРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ",
-                        value: admin.msuName ?? "РќРµ СѓРєР°Р·Р°РЅРѕ",
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
                       },
                     ]}
                     blockPending={blockMutation.isPending}
@@ -1861,21 +1860,21 @@ export function RegionAdminDashboard() {
           <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div>
               <h3 className="font-semibold text-[#1D3557]">
-                РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РњРЎРЈ
+                Администраторы МСУ
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                РЈС‡С‘С‚РЅС‹Рµ Р·Р°РїРёСЃРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РІ РїСЂРµРґРµР»Р°С… С‚РІРѕРµРіРѕ СЂРµРіРёРѕРЅР°.
+                Учётные записи администраторов в пределах твоего региона.
               </p>
             </div>
 
             {accountsQuery.isPending ? (
               <p className="py-8 text-sm text-slate-500">
-                Р—Р°РіСЂСѓР¶Р°РµРј СѓС‡С‘С‚РЅС‹Рµ Р·Р°РїРёСЃРё...
+                Загружаем учётные записи...
               </p>
             ) : accountsQuery.isError ? (
               <div className="py-8">
                 <p role="alert" className="text-sm text-red-700">
-                  РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРІ РњРЎРЈ.
+                  Не удалось загрузить список администраторов МСУ.
                 </p>
 
                 <button
@@ -1883,12 +1882,12 @@ export function RegionAdminDashboard() {
                   onClick={() => void accountsQuery.refetch()}
                   className={`${buttonSecondary} mt-3`}
                 >
-                  РџРѕРІС‚РѕСЂРёС‚СЊ
+                  Повторить
                 </button>
               </div>
             ) : allAdmins.length === 0 ? (
               <p className="py-10 text-sm text-slate-500">
-                РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ РњРЎРЈ РїРѕРєР° РЅРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅС‹.
+                Администраторы МСУ пока не зарегистрированы.
               </p>
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -1897,11 +1896,11 @@ export function RegionAdminDashboard() {
                     key={admin.id}
                     user={admin}
                     icon={<Users size={22} />}
-                    roleLabel="РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РњРЎРЈ"
+                    roleLabel="Администратор МСУ"
                     details={[
                       {
-                        label: "РњСѓРЅРёС†РёРїР°Р»СЊРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ",
-                        value: admin.msuName ?? "РќРµ СѓРєР°Р·Р°РЅРѕ",
+                        label: "Муниципальное управление",
+                        value: admin.msuName ?? "Не указано",
                       },
                     ]}
                     blockPending={blockMutation.isPending}

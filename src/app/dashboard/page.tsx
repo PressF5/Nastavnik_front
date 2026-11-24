@@ -25,9 +25,7 @@ export default function DashboardPage() {
   if (!isInitialized || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <p className="text-sm text-slate-600">
-          Проверяем авторизацию...
-        </p>
+        <p className="text-sm text-slate-600">Проверяем авторизацию...</p>
       </main>
     );
   }
