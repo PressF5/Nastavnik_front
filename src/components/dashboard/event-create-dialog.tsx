@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "radix-ui";
 import { Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
-import type { EventLevel, EventFormat } from "@/types/event";
+import type { EventItem, EventLevel, EventFormat } from "@/types/event";
 
 type SpeakerRequest = {
   fullName: string;
@@ -19,7 +19,7 @@ type MaterialLinkRequest = {
   url: string;
 };
 
-type CreateEventRequest = {
+type EventRequest = {
   name: string;
   description: string | null;
   level: EventLevel;
@@ -37,6 +37,8 @@ type CreateEventRequest = {
 
 type EventCreateDialogProps = {
   isRegionAdmin: boolean;
+  eventToEdit: EventItem | null;
+  onCloseEdit: () => void;
 };
 
 const inputClass =
@@ -63,7 +65,11 @@ function isHttpUrl(value: string) {
   return /^https?:\/\/.+$/i.test(value);
 }
 
-export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
+export function EventCreateDialog({
+  isRegionAdmin,
+  eventToEdit,
+  onCloseEdit,
+}: EventCreateDialogProps) {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
@@ -80,15 +86,57 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
   const [speakers, setSpeakers] = useState<SpeakerRequest[]>([]);
   const [materialLinks, setMaterialLinks] = useState<MaterialLinkRequest[]>([]);
 
-  const createMutation = useMutation({
-    mutationFn: (request: CreateEventRequest) =>
-      apiFetch("/api/admin/events", {
-        method: "POST",
+  const isEditing = eventToEdit !== null;
+  const dialogOpen = open || isEditing;
+
+  useEffect(() => {
+    if (!eventToEdit) {
+      return;
+    }
+
+    setName(eventToEdit.name);
+    setDescription(eventToEdit.description ?? "");
+    setLevel(eventToEdit.level);
+    setFormat(eventToEdit.format);
+    setStartAt(eventToEdit.startAt.slice(0, 16));
+    setEndAt(eventToEdit.endAt.slice(0, 16));
+    setLocation(eventToEdit.location ?? "");
+    setUrl(eventToEdit.url ?? "");
+
+    setSpeakers(
+      eventToEdit.speakers.map((speaker) => ({
+        fullName: speaker.fullName,
+        position: speaker.position ?? "",
+      })),
+    );
+
+    setMaterialLinks(
+      eventToEdit.materialLinks.map((material) => ({
+        name: material.name,
+        url: material.url,
+      })),
+    );
+  }, [eventToEdit]);
+
+  const eventMutation = useMutation({
+    mutationFn: ({
+      request,
+      eventId,
+    }: {
+      request: EventRequest;
+      eventId: number | null;
+    }) =>
+      apiFetch(eventId ? `/api/admin/events/${eventId}` : "/api/admin/events", {
+        method: eventId ? "PUT" : "POST",
         body: JSON.stringify(request),
       }),
 
-    onSuccess: async () => {
-      toast.success("Мероприятие создано.");
+    onSuccess: async (_, variables) => {
+      toast.success(
+        variables.eventId
+          ? "Изменения мероприятия сохранены."
+          : "Мероприятие создано.",
+      );
 
       await queryClient.invalidateQueries({
         queryKey: ["admin-events"],
@@ -96,12 +144,21 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
 
       resetForm();
       setOpen(false);
+
+      if (variables.eventId) {
+        onCloseEdit();
+      }
     },
 
     onError: (error) => {
-      toast.error("Не удалось создать мероприятие.", {
-        description: getErrorMessage(error),
-      });
+      toast.error(
+        isEditing
+          ? "Не удалось изменить мероприятие."
+          : "Не удалось создать мероприятие.",
+        {
+          description: getErrorMessage(error),
+        },
+      );
     },
   });
 
@@ -119,15 +176,22 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen && createMutation.isPending) {
+    if (!nextOpen && eventMutation.isPending) {
       return;
     }
 
-    setOpen(nextOpen);
-
     if (!nextOpen) {
       resetForm();
+      setOpen(false);
+
+      if (isEditing) {
+        onCloseEdit();
+      }
+
+      return;
     }
+
+    setOpen(true);
   }
 
   function addSpeaker() {
@@ -231,7 +295,7 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
       return;
     }
 
-    const request: CreateEventRequest = {
+    const request: EventRequest = {
       name: normalizedName,
       description: description.trim() || null,
       level: isRegionAdmin ? level : "MUNICIPAL",
@@ -244,17 +308,22 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
       materialLinks: normalizedMaterials,
     };
 
-    createMutation.mutate(request);
+    eventMutation.mutate({
+      request,
+      eventId: eventToEdit?.id ?? null,
+    });
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger asChild>
-        <button type="button" className={buttonPrimary}>
-          <Plus size={16} />
-          Создать мероприятие
-        </button>
-      </Dialog.Trigger>
+    <Dialog.Root open={dialogOpen} onOpenChange={handleOpenChange}>
+      {!isEditing && (
+        <Dialog.Trigger asChild>
+          <button type="button" className={buttonPrimary}>
+            <Plus size={16} />
+            Создать мероприятие
+          </button>
+        </Dialog.Trigger>
+      )}
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
@@ -263,11 +332,13 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
           <div className="flex items-start justify-between border-b border-slate-200 bg-white p-5 sm:p-6">
             <div>
               <Dialog.Title className="text-lg font-semibold text-[#1D3557]">
-                Новое мероприятие
+                {isEditing ? "Редактирование мероприятия" : "Новое мероприятие"}
               </Dialog.Title>
 
               <Dialog.Description className="mt-1 text-sm text-slate-500">
-                Заполни информацию о мероприятии.
+                {isEditing
+                  ? "Измени информацию о мероприятии."
+                  : "Заполни информацию о мероприятии."}
               </Dialog.Description>
             </div>
 
@@ -275,7 +346,7 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
               <button
                 type="button"
                 aria-label="Закрыть"
-                disabled={createMutation.isPending}
+                disabled={eventMutation.isPending}
                 className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
               >
                 <X size={20} />
@@ -337,6 +408,7 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
                   >
                     <option value="FEDERAL">Федеральное</option>
                     <option value="REGIONAL">Региональное</option>
+                    <option value="MUNICIPAL">Муниципальное</option>
                   </select>
                 ) : (
                   <>
@@ -613,7 +685,7 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
               <button
                 type="button"
                 onClick={() => handleOpenChange(false)}
-                disabled={createMutation.isPending}
+                disabled={eventMutation.isPending}
                 className={buttonSecondary}
               >
                 Отмена
@@ -621,12 +693,14 @@ export function EventCreateDialog({ isRegionAdmin }: EventCreateDialogProps) {
 
               <button
                 type="submit"
-                disabled={createMutation.isPending}
+                disabled={eventMutation.isPending}
                 className={buttonPrimary}
               >
-                {createMutation.isPending
-                  ? "Создание..."
-                  : "Создать мероприятие"}
+                {eventMutation.isPending
+                  ? "Сохранение..."
+                  : isEditing
+                    ? "Сохранить изменения"
+                    : "Создать мероприятие"}
               </button>
             </div>
           </form>

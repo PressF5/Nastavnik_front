@@ -2,7 +2,7 @@
 
 import { Dialog } from "radix-ui";
 import Link from "next/link";
-import { CalendarDays, ExternalLink, MapPin, X } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin, X, Pencil } from "lucide-react";
 import type {
   EventItem,
   EventLevel,
@@ -13,6 +13,7 @@ import type {
 type EventDetailsDialogProps = {
   event: EventItem | null;
   onClose: () => void;
+  onEdit: (event: EventItem) => void;
 };
 
 function formatDateTime(value: string) {
@@ -86,6 +87,7 @@ function InfoItem({
 export function EventDetailsDialog({
   event,
   onClose,
+  onEdit,
 }: EventDetailsDialogProps) {
   return (
     <Dialog.Root
@@ -133,15 +135,26 @@ export function EventDetailsDialog({
                   </Dialog.Description>
                 </div>
 
-                <Dialog.Close asChild>
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    aria-label="Закрыть"
-                    className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                    onClick={() => onEdit(event)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                   >
-                    <X size={20} />
+                    <Pencil size={16} />
+                    Редактировать
                   </button>
-                </Dialog.Close>
+
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      aria-label="Закрыть"
+                      className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                    >
+                      <X size={20} />
+                    </button>
+                  </Dialog.Close>
+                </div>
               </div>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">

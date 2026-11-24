@@ -105,6 +105,7 @@ export default function EventsPage() {
   const [active, setActive] = useState("true");
   const [page, setPage] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
 
   // Запускаем поиск после небольшой паузы во вводе текста.
   useEffect(() => {
@@ -227,7 +228,11 @@ export default function EventsPage() {
               </p>
             </div>
 
-            <EventCreateDialog isRegionAdmin={user.role === "REGION_ADMIN"} />
+            <EventCreateDialog
+              isRegionAdmin={user.role === "REGION_ADMIN"}
+              eventToEdit={editingEvent}
+              onCloseEdit={() => setEditingEvent(null)}
+            />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <form onSubmit={handleSearch} className="flex gap-2 md:col-span-1">
@@ -425,6 +430,10 @@ export default function EventsPage() {
       <EventDetailsDialog
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
+        onEdit={(event) => {
+          setSelectedEvent(null);
+          setEditingEvent(event);
+        }}
       />
     </main>
   );
