@@ -434,6 +434,12 @@ export default function EventsPage() {
           setSelectedEvent(null);
           setEditingEvent(event);
         }}
+        canEdit={Boolean(
+          selectedEvent &&
+          (user.role === "REGION_ADMIN"
+            ? selectedEvent.level !== "MUNICIPAL"
+            : selectedEvent.level === "MUNICIPAL"),
+        )}
       />
     </main>
   );

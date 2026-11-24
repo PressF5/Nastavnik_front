@@ -408,7 +408,6 @@ export function EventCreateDialog({
                   >
                     <option value="FEDERAL">Федеральное</option>
                     <option value="REGIONAL">Региональное</option>
-                    <option value="MUNICIPAL">Муниципальное</option>
                   </select>
                 ) : (
                   <>

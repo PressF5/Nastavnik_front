@@ -14,6 +14,7 @@ type EventDetailsDialogProps = {
   event: EventItem | null;
   onClose: () => void;
   onEdit: (event: EventItem) => void;
+  canEdit: boolean;
 };
 
 function formatDateTime(value: string) {
@@ -88,6 +89,7 @@ export function EventDetailsDialog({
   event,
   onClose,
   onEdit,
+  canEdit,
 }: EventDetailsDialogProps) {
   return (
     <Dialog.Root
@@ -136,14 +138,16 @@ export function EventDetailsDialog({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(event)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <Pencil size={16} />
-                    Редактировать
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onEdit(event)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Pencil size={16} />
+                      Редактировать
+                    </button>
+                  )}
 
                   <Dialog.Close asChild>
                     <button
