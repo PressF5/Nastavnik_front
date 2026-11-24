@@ -7,9 +7,7 @@ import { Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
-
-type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
-type EventFormat = "ONLINE" | "OFFLINE" | "HYBRID";
+import type { EventLevel, EventFormat } from "@/types/event";
 
 type SpeakerRequest = {
   fullName: string;
