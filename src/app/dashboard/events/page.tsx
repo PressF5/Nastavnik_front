@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { CalendarDays, Search, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -10,53 +9,22 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { EventCreateDialog } from "@/components/dashboard/event-create-dialog";
-
-type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
-type EventFormat = "ONLINE" | "OFFLINE" | "HYBRID";
-type EventStatus = "PLANNED" | "ONGOING" | "COMPLETED";
-
-type EventItem = {
-  id: number;
-  name: string;
-  description: string | null;
-  level: EventLevel;
-  format: EventFormat;
-  status: EventStatus;
-  startAt: string;
-  endAt: string;
-  nextStatusChangeAt: string | null;
-  location: string | null;
-  organizerPersonName: string | null;
-  organizerOrganizationName: string | null;
-  url: string | null;
-  active: boolean;
-  regionId: number;
-  msuId: number | null;
-  speakers: {
-    id: number;
-    fullName: string;
-    position: string | null;
-    sortOrder: number;
-  }[];
-  materialLinks: {
-    id: number;
-    name: string;
-    url: string;
-    sortOrder: number;
-  }[];
-  createdAt: string;
-  updatedAt: string;
-};
+import {
+  EventDetailsDialog,
+  type EventItem,
+  type EventLevel,
+  type EventFormat,
+  type EventStatus,
+} from "@/components/dashboard/event-details-dialog";
 
 type SpringPage<T> = {
   content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
 };
 
 const inputClass =
@@ -135,6 +103,7 @@ export default function EventsPage() {
   const [level, setLevel] = useState("");
   const [active, setActive] = useState("true");
   const [page, setPage] = useState(0);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   const pageSize = 10;
 
@@ -305,7 +274,7 @@ export default function EventsPage() {
                 Повторить
               </button>
             </div>
-          ) : eventsQuery.data.empty ? (
+          ) : eventsQuery.data.content.length === 0 ? (
             <div className="py-16 text-center">
               <CalendarDays className="mx-auto size-10 text-slate-300" />
               <p className="mt-3 font-medium text-[#1D3557]">
@@ -318,133 +287,89 @@ export default function EventsPage() {
           ) : (
             <>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {eventsQuery.data.content.map((event) => (
+                {eventsQuery.data.content.map((eventItem) => (
                   <article
-                    key={event.id}
-                    className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30"
+                    key={eventItem.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedEvent(eventItem)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedEvent(eventItem);
+                      }
+                    }}
+                    className="flex cursor-pointer flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30 transition hover:border-[#457B9D]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/30"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-lg bg-[#E8F0F5] px-3 py-1.5 text-xs font-medium text-[#1D3557]">
-                        {levelLabel(event.level)}
+                        {levelLabel(eventItem.level)}
                       </span>
 
                       <span
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${statusClass(event.status)}`}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${statusClass(eventItem.status)}`}
                       >
-                        {statusLabel(event.status)}
+                        {statusLabel(eventItem.status)}
                       </span>
 
-                      <span
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                          event.active
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {event.active ? "Активно" : "Неактивно"}
-                      </span>
+                      {!eventItem.active && (
+                        <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
+                          Неактивно
+                        </span>
+                      )}
                     </div>
 
                     <h2 className="mt-4 font-semibold leading-6 text-[#1D3557]">
-                      {event.name}
+                      {eventItem.name}
                     </h2>
 
-                    {event.description && (
+                    {eventItem.description && (
                       <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                        {event.description}
+                        {eventItem.description}
                       </p>
                     )}
 
                     <div className="mt-4 flex-1 space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
                       <p>
                         <span className="text-slate-400">Формат:</span>{" "}
-                        {formatLabel(event.format)}
+                        {formatLabel(eventItem.format)}
                       </p>
 
                       <p>
                         <span className="text-slate-400">Начало:</span>{" "}
-                        {formatDateTime(event.startAt)}
+                        {formatDateTime(eventItem.startAt)}
                       </p>
 
                       <p>
                         <span className="text-slate-400">Окончание:</span>{" "}
-                        {formatDateTime(event.endAt)}
+                        {formatDateTime(eventItem.endAt)}
                       </p>
 
-                      {event.location && (
+                      {eventItem.location && (
                         <p>
                           <span className="text-slate-400">Место:</span>{" "}
-                          {event.location}
+                          {eventItem.location}
                         </p>
                       )}
-
-                      {event.organizerPersonName && (
-                        <div>
-                          <p>
-                            <span className="text-slate-400">Организатор:</span>{" "}
-                            {event.organizerPersonName}
-                          </p>
-                          {event.organizerOrganizationName && (
-                            <p className="pl-2 text-xs text-slate-500">
-                              {event.organizerOrganizationName}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {event.speakers.length > 0 && (
-                        <div>
-                          <p className="text-slate-400">Спикеры:</p>
-                          {event.speakers.map((speaker) => (
-                            <p key={speaker.id} className="pl-2">
-                              {speaker.fullName}
-                              {speaker.position && ` — ${speaker.position}`}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-
-                      {event.url && (
-                        <Link
-                          href={event.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block text-[#457B9D] hover:underline"
-                        >
-                          Ссылка на мероприятие
-                        </Link>
-                      )}
-
-                      {event.materialLinks.length > 0 && (
-                        <div>
-                          <p className="text-slate-400">Материалы:</p>
-                          {event.materialLinks.map((material) => (
-                            <p key={material.id} className="pl-2">
-                              <Link
-                                href={material.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[#457B9D] hover:underline"
-                              >
-                                {material.name}
-                              </Link>
-                            </p>
-                          ))}
-                        </div>
-                      )}
                     </div>
+
+                    <p className="mt-4 border-t border-slate-100 pt-3 text-xs font-medium text-[#457B9D]">
+                      Нажмите, чтобы посмотреть подробности
+                    </p>
                   </article>
                 ))}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5 text-sm text-slate-600">
-                <span>Всего мероприятий: {eventsQuery.data.totalElements}</span>
+                <span>
+                  Всего мероприятий: {eventsQuery.data.page.totalElements}
+                </span>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     className={secondaryButton}
-                    disabled={eventsQuery.data.first}
+                    disabled={eventsQuery.data.page.number === 0}
                     onClick={() =>
                       setPage((current) => Math.max(0, current - 1))
                     }
@@ -453,14 +378,17 @@ export default function EventsPage() {
                   </button>
 
                   <span>
-                    Страница {page + 1} из{" "}
-                    {Math.max(1, eventsQuery.data.totalPages)}
+                    Страница {eventsQuery.data.page.number + 1} из{" "}
+                    {Math.max(1, eventsQuery.data.page.totalPages)}
                   </span>
 
                   <button
                     type="button"
                     className={secondaryButton}
-                    disabled={eventsQuery.data.last}
+                    disabled={
+                      eventsQuery.data.page.number >=
+                      eventsQuery.data.page.totalPages - 1
+                    }
                     onClick={() => setPage((current) => current + 1)}
                   >
                     Вперёд
@@ -471,6 +399,10 @@ export default function EventsPage() {
           )}
         </section>
       </div>
+      <EventDetailsDialog
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
     </main>
   );
 }
