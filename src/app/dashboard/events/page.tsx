@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from 'next/link'
+import Link from "next/link";
 import { CalendarDays, Search, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -12,20 +12,38 @@ import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-heade
 import { EventCreateDialog } from "@/components/dashboard/event-create-dialog";
 
 type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
+type EventFormat = "ONLINE" | "OFFLINE" | "HYBRID";
+type EventStatus = "PLANNED" | "ONGOING" | "COMPLETED";
 
 type EventItem = {
   id: number;
   name: string;
   description: string | null;
   level: EventLevel;
-  startDate: string;
-  endDate: string | null;
+  format: EventFormat;
+  status: EventStatus;
+  startAt: string;
+  endAt: string;
+  nextStatusChangeAt: string | null;
   location: string | null;
-  organizer: string | null;
+  organizerPersonName: string | null;
+  organizerOrganizationName: string | null;
   url: string | null;
   active: boolean;
   regionId: number;
   msuId: number | null;
+  speakers: {
+    id: number;
+    fullName: string;
+    position: string | null;
+    sortOrder: number;
+  }[];
+  materialLinks: {
+    id: number;
+    name: string;
+    url: string;
+    sortOrder: number;
+  }[];
   createdAt: string;
   updatedAt: string;
 };
@@ -55,9 +73,44 @@ function getErrorMessage(error: unknown) {
   return "Не удалось загрузить мероприятия.";
 }
 
-function formatDate(value: string) {
-  const [year, month, day] = value.split("-");
-  return `${day}.${month}.${year}`;
+function formatDateTime(value: string) {
+  const [date, time] = value.split("T");
+  const [year, month, day] = date.split("-");
+
+  return `${day}.${month}.${year} ${time.slice(0, 5)}`;
+}
+
+function statusLabel(status: EventStatus) {
+  switch (status) {
+    case "PLANNED":
+      return "Запланировано";
+    case "ONGOING":
+      return "Идёт";
+    case "COMPLETED":
+      return "Завершено";
+  }
+}
+
+function statusClass(status: EventStatus) {
+  switch (status) {
+    case "PLANNED":
+      return "bg-blue-50 text-blue-700";
+    case "ONGOING":
+      return "bg-emerald-50 text-emerald-700";
+    case "COMPLETED":
+      return "bg-red-50 text-red-700";
+  }
+}
+
+function formatLabel(format: EventFormat) {
+  switch (format) {
+    case "ONLINE":
+      return "Онлайн";
+    case "OFFLINE":
+      return "Очно";
+    case "HYBRID":
+      return "Смешанный";
+  }
 }
 
 function levelLabel(level: EventLevel) {
@@ -112,6 +165,36 @@ export default function EventsPage() {
       }),
     enabled: isInitialized && canAccess,
   });
+
+  useEffect(() => {
+    const events = eventsQuery.data?.content;
+
+    if (!events?.length) {
+      return;
+    }
+
+    const nextChange = events
+      .map((event) => event.nextStatusChangeAt)
+      .filter((value): value is string => value !== null)
+      .map((value) => new Date(value).getTime())
+      .filter((value) => Number.isFinite(value))
+      .sort((a, b) => a - b)[0];
+
+    if (nextChange === undefined) {
+      return;
+    }
+
+    const delay = Math.max(0, nextChange - Date.now()) + 500;
+
+    const timeout = window.setTimeout(
+      () => {
+        void eventsQuery.refetch();
+      },
+      Math.min(delay, 2_147_000_000),
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [eventsQuery.data?.content, eventsQuery.refetch]);
 
   function handleSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -246,6 +329,12 @@ export default function EventsPage() {
                       </span>
 
                       <span
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${statusClass(event.status)}`}
+                      >
+                        {statusLabel(event.status)}
+                      </span>
+
+                      <span
                         className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                           event.active
                             ? "bg-emerald-50 text-emerald-700"
@@ -268,16 +357,19 @@ export default function EventsPage() {
 
                     <div className="mt-4 flex-1 space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
                       <p>
-                        <span className="text-slate-400">Начало:</span>{" "}
-                        {formatDate(event.startDate)}
+                        <span className="text-slate-400">Формат:</span>{" "}
+                        {formatLabel(event.format)}
                       </p>
 
-                      {event.endDate && (
-                        <p>
-                          <span className="text-slate-400">Окончание:</span>{" "}
-                          {formatDate(event.endDate)}
-                        </p>
-                      )}
+                      <p>
+                        <span className="text-slate-400">Начало:</span>{" "}
+                        {formatDateTime(event.startAt)}
+                      </p>
+
+                      <p>
+                        <span className="text-slate-400">Окончание:</span>{" "}
+                        {formatDateTime(event.endAt)}
+                      </p>
 
                       {event.location && (
                         <p>
@@ -286,11 +378,30 @@ export default function EventsPage() {
                         </p>
                       )}
 
-                      {event.organizer && (
-                        <p>
-                          <span className="text-slate-400">Организатор:</span>{" "}
-                          {event.organizer}
-                        </p>
+                      {event.organizerPersonName && (
+                        <div>
+                          <p>
+                            <span className="text-slate-400">Организатор:</span>{" "}
+                            {event.organizerPersonName}
+                          </p>
+                          {event.organizerOrganizationName && (
+                            <p className="pl-2 text-xs text-slate-500">
+                              {event.organizerOrganizationName}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {event.speakers.length > 0 && (
+                        <div>
+                          <p className="text-slate-400">Спикеры:</p>
+                          {event.speakers.map((speaker) => (
+                            <p key={speaker.id} className="pl-2">
+                              {speaker.fullName}
+                              {speaker.position && ` — ${speaker.position}`}
+                            </p>
+                          ))}
+                        </div>
                       )}
 
                       {event.url && (
@@ -302,6 +413,24 @@ export default function EventsPage() {
                         >
                           Ссылка на мероприятие
                         </Link>
+                      )}
+
+                      {event.materialLinks.length > 0 && (
+                        <div>
+                          <p className="text-slate-400">Материалы:</p>
+                          {event.materialLinks.map((material) => (
+                            <p key={material.id} className="pl-2">
+                              <Link
+                                href={material.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#457B9D] hover:underline"
+                              >
+                                {material.name}
+                              </Link>
+                            </p>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </article>
