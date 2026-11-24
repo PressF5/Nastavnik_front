@@ -163,7 +163,6 @@ export function RegionAdminDashboard() {
   const [msuName, setMsuName] = useState("");
   const [msuCode, setMsuCode] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [msuSearch, setMsuSearch] = useState("");
   const [msuPage, setMsuPage] = useState(0);
   const [msuPageSize, setMsuPageSize] = useState(10);
@@ -1032,7 +1031,8 @@ export function RegionAdminDashboard() {
                                       }}
                                       className={buttonSecondary}
                                     >
-                                      <Pencil size={15} />� зменить
+                                      <Pencil size={15} />
+                                      Изменить
                                     </button>
 
                                     {canDelete && (
@@ -1338,7 +1338,7 @@ export function RegionAdminDashboard() {
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
                   {msuSearch
-                    ? "� змените поисковый запрос."
+                    ? "Измените поисковый запрос."
                     : "Создайте первое МСУ, чтобы продолжить работу."}
                 </p>
               </div>
@@ -1359,7 +1359,7 @@ export function RegionAdminDashboard() {
                             Редактирование МСУ
                           </h4>
                           <p className="mt-1 text-xs text-slate-500">
-                            � змени код или название муниципального управления
+                            Измени код или название муниципального управления
                           </p>
                         </div>
 
@@ -1584,7 +1584,7 @@ export function RegionAdminDashboard() {
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
                   {organizationSearch
-                    ? "� змените поисковый запрос."
+                    ? "Измените поисковый запрос."
                     : "Создайте ОО в одном из МСУ региона."}
                 </p>
               </div>
