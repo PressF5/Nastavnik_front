@@ -9,13 +9,14 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { EventCreateDialog } from "@/components/dashboard/event-create-dialog";
-import {
-  EventDetailsDialog,
-  type EventItem,
-  type EventLevel,
-  type EventFormat,
-  type EventStatus,
-} from "@/components/dashboard/event-details-dialog";
+import { EventDetailsDialog } from "@/components/dashboard/event-details-dialog";
+
+import type {
+  EventItem,
+  EventLevel,
+  EventFormat,
+  EventStatus,
+} from "@/types/event";
 
 type SpringPage<T> = {
   content: T[];

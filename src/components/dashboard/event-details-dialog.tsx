@@ -3,43 +3,12 @@
 import { Dialog } from "radix-ui";
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, X } from "lucide-react";
-
-export type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
-export type EventFormat = "ONLINE" | "OFFLINE" | "HYBRID";
-export type EventStatus = "PLANNED" | "ONGOING" | "COMPLETED";
-
-export type EventItem = {
-  id: number;
-  name: string;
-  description: string | null;
-  level: EventLevel;
-  format: EventFormat;
-  status: EventStatus;
-  startAt: string;
-  endAt: string;
-  nextStatusChangeAt: string | null;
-  location: string | null;
-  organizerPersonName: string | null;
-  organizerOrganizationName: string | null;
-  url: string | null;
-  active: boolean;
-  regionId: number;
-  msuId: number | null;
-  speakers: {
-    id: number;
-    fullName: string;
-    position: string | null;
-    sortOrder: number;
-  }[];
-  materialLinks: {
-    id: number;
-    name: string;
-    url: string;
-    sortOrder: number;
-  }[];
-  createdAt: string;
-  updatedAt: string;
-};
+import type {
+  EventItem,
+  EventLevel,
+  EventFormat,
+  EventStatus,
+} from "@/types/event";
 
 type EventDetailsDialogProps = {
   event: EventItem | null;
