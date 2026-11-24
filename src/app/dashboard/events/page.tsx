@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from 'next/link'
 import { CalendarDays, Search, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
+import { EventCreateDialog } from "@/components/dashboard/event-create-dialog";
 
 type EventLevel = "FEDERAL" | "REGIONAL" | "MUNICIPAL";
 
@@ -144,13 +146,17 @@ export default function EventsPage() {
         />
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-          <div className="mb-5">
-            <h3 className="font-semibold text-[#1D3557]">Мероприятия</h3>
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-[#1D3557]">Мероприятия</h3>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Управление федеральными, региональными и муниципальными
-              мероприятиями в пределах доступного уровня полномочий.
-            </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Управление федеральными, региональными и муниципальными
+                мероприятиями в пределах доступного уровня полномочий.
+              </p>
+            </div>
+
+            <EventCreateDialog isRegionAdmin={user.role === "REGION_ADMIN"} />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <form onSubmit={handleSearch} className="flex gap-2 md:col-span-1">
@@ -288,14 +294,14 @@ export default function EventsPage() {
                       )}
 
                       {event.url && (
-                        <a
+                        <Link
                           href={event.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-block text-[#457B9D] hover:underline"
                         >
-                          Подробнее о мероприятии
-                        </a>
+                          Ссылка на мероприятие
+                        </Link>
                       )}
                     </div>
                   </article>
