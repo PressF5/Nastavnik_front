@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "radix-ui";
 import Link from "next/link";
 import {
@@ -106,6 +106,12 @@ export function EventDetailsDialog({
   isDeleting,
 }: EventDetailsDialogProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  useEffect(() => {
+    if (event === null) {
+      setIsConfirmingDelete(false);
+    }
+  }, [event]);
   return (
     <>
       <Dialog.Root
@@ -336,7 +342,7 @@ export function EventDetailsDialog({
         </Dialog.Portal>
       </Dialog.Root>
       <Dialog.Root
-        open={isConfirmingDelete}
+        open={isConfirmingDelete && event !== null}
         onOpenChange={(open) => {
           if (!isDeleting) {
             setIsConfirmingDelete(open);
