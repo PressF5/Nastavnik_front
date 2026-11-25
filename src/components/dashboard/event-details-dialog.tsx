@@ -111,7 +111,9 @@ export function EventDetailsDialog({
       <Dialog.Root
         open={event !== null && !isConfirmingDelete}
         onOpenChange={(open) => {
-          if (!open) onClose();
+          if (!open && !isConfirmingDelete) {
+            onClose();
+          }
         }}
       >
         <Dialog.Portal>
