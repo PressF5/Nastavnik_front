@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Search, RefreshCw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -98,6 +99,7 @@ export default function EventsPage() {
 
   const user = useAuthStore((state) => state.user);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const queryClient = useQueryClient();
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -147,6 +149,29 @@ export default function EventsPage() {
     enabled: isInitialized && canAccess,
   });
 
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: number) =>
+      apiFetch<void>(`/api/admin/events/${eventId}`, {
+        method: "DELETE",
+      }),
+
+    onSuccess: async () => {
+      toast.success("Мероприятие удалено.");
+
+      setSelectedEvent(null);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["admin-events"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось удалить мероприятие.", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   useEffect(() => {
     const events = eventsQuery.data?.content;
 
@@ -186,6 +211,13 @@ export default function EventsPage() {
   if (!isInitialized || !user || !canAccess) {
     return null;
   }
+
+  const canManageSelectedEvent = Boolean(
+    selectedEvent &&
+    (user.role === "REGION_ADMIN"
+      ? selectedEvent.level !== "MUNICIPAL"
+      : selectedEvent.level === "MUNICIPAL"),
+  );
 
   return (
     <main className="bg-[#F8F9FA] text-slate-900">
@@ -436,12 +468,10 @@ export default function EventsPage() {
           setSelectedEvent(null);
           setEditingEvent(event);
         }}
-        canEdit={Boolean(
-          selectedEvent &&
-          (user.role === "REGION_ADMIN"
-            ? selectedEvent.level !== "MUNICIPAL"
-            : selectedEvent.level === "MUNICIPAL"),
-        )}
+        canEdit={canManageSelectedEvent}
+        canDelete={canManageSelectedEvent}
+        onDelete={(event) => deleteEventMutation.mutate(event.id)}
+        isDeleting={deleteEventMutation.isPending}
       />
     </main>
   );
