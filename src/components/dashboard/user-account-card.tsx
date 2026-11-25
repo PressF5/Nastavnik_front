@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { UserProfileDialog } from "@/components/dashboard/user-profile-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type AccountStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 type BlockAction = "block" | "unblock";
@@ -55,16 +56,6 @@ export function UserAccountCard({
 
   const status = statusConfig[user.accountStatus];
   const action: BlockAction = user.isBlock ? "unblock" : "block";
-
-  function handleBlockToggle() {
-    const message = user.isBlock
-      ? `Разблокировать учётную запись ${fullName}?`
-      : `Заблокировать учётную запись ${fullName}?`;
-
-    if (window.confirm(message)) {
-      onToggleBlock?.(action);
-    }
-  }
 
   return (
     <article className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md">
@@ -134,18 +125,33 @@ export function UserAccountCard({
 
       {user.accountStatus === "ACCEPTED" && onToggleBlock && (
         <div className="mt-5 border-t border-slate-100 pt-4">
-          <button
-            type="button"
-            disabled={blockPending}
-            onClick={handleBlockToggle}
-            className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+          <ConfirmDialog
+            trigger={
+              <button
+                type="button"
+                disabled={blockPending}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  user.isBlock
+                    ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    : "border-red-200 text-red-700 hover:bg-red-50"
+                }`}
+              >
+                {user.isBlock ? "Разблокировать" : "Заблокировать"}
+              </button>
+            }
+            title={
               user.isBlock
-                ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                : "border-red-200 text-red-700 hover:bg-red-50"
-            }`}
-          >
-            {user.isBlock ? "Разблокировать" : "Заблокировать"}
-          </button>
+                ? "Разблокировать учётную запись?"
+                : "Заблокировать учётную запись?"
+            }
+            description={`Учётная запись пользователя «${fullName}» будет ${
+              user.isBlock ? "разблокирована" : "заблокирована"
+            }.`}
+            confirmLabel={user.isBlock ? "Разблокировать" : "Заблокировать"}
+            variant={user.isBlock ? "default" : "danger"}
+            isPending={blockPending}
+            onConfirm={() => onToggleBlock?.(action)}
+          />
         </div>
       )}
       <div className="mt-5 border-t border-slate-100 pt-4">

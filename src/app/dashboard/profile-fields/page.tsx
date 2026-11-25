@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -416,25 +417,6 @@ export default function ProfileFieldsPage() {
           }))
         : [{ value: "", label: "", active: true }],
     );
-  }
-
-  function handleToggleActive(field: ProfileField) {
-    const action = field.active ? "deactivate" : "activate";
-
-    const confirmed = window.confirm(
-      field.active
-        ? `Деактивировать поле «${field.name}»?\n\nОно перестанет отображаться в анкетах и участвовать в подборе. Существующие настройки и ответы сохранятся.`
-        : `Активировать поле «${field.name}»?\n\nОно снова появится в анкетах с прежними настройками.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    toggleActiveMutation.mutate({
-      fieldId: field.id,
-      action,
-    });
   }
 
   function updateOption(index: number, key: "value" | "label", value: string) {
@@ -968,26 +950,90 @@ export default function ProfileFieldsPage() {
                         Редактировать
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleToggleActive(field)}
-                        disabled={toggleActiveMutation.isPending}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Power size={16} />
-                        Деактивировать
-                      </button>
+                      <ConfirmDialog
+                        trigger={
+                          <button
+                            type="button"
+                            disabled={toggleActiveMutation.isPending}
+                            className={`inline-flex items-center justify-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                              field.active
+                                ? "border-red-200 text-red-600 hover:bg-red-50"
+                                : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                          >
+                            {field.active ? (
+                              <Power size={16} />
+                            ) : (
+                              <RotateCcw size={16} />
+                            )}
+                            {field.active ? "Деактивировать" : "Активировать"}
+                          </button>
+                        }
+                        title={
+                          field.active
+                            ? "Деактивировать поле?"
+                            : "Активировать поле?"
+                        }
+                        description={
+                          field.active
+                            ? `Поле «${field.name}» перестанет отображаться в анкетах и участвовать в подборе. Существующие настройки и ответы сохранятся.`
+                            : `Поле «${field.name}» снова появится в анкетах с прежними настройками.`
+                        }
+                        confirmLabel={
+                          field.active ? "Деактивировать" : "Активировать"
+                        }
+                        variant={field.active ? "danger" : "default"}
+                        isPending={toggleActiveMutation.isPending}
+                        onConfirm={() =>
+                          toggleActiveMutation.mutate({
+                            fieldId: field.id,
+                            action: field.active ? "deactivate" : "activate",
+                          })
+                        }
+                      />
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleToggleActive(field)}
-                      disabled={toggleActiveMutation.isPending}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <RotateCcw size={16} />
-                      Активировать
-                    </button>
+                    <ConfirmDialog
+                      trigger={
+                        <button
+                          type="button"
+                          disabled={toggleActiveMutation.isPending}
+                          className={`inline-flex items-center justify-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            field.active
+                              ? "border-red-200 text-red-600 hover:bg-red-50"
+                              : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                          }`}
+                        >
+                          {field.active ? (
+                            <Power size={16} />
+                          ) : (
+                            <RotateCcw size={16} />
+                          )}
+                          {field.active ? "Деактивировать" : "Активировать"}
+                        </button>
+                      }
+                      title={
+                        field.active
+                          ? "Деактивировать поле?"
+                          : "Активировать поле?"
+                      }
+                      description={
+                        field.active
+                          ? `Поле «${field.name}» перестанет отображаться в анкетах и участвовать в подборе. Существующие настройки и ответы сохранятся.`
+                          : `Поле «${field.name}» снова появится в анкетах с прежними настройками.`
+                      }
+                      confirmLabel={
+                        field.active ? "Деактивировать" : "Активировать"
+                      }
+                      variant={field.active ? "danger" : "default"}
+                      isPending={toggleActiveMutation.isPending}
+                      onConfirm={() =>
+                        toggleActiveMutation.mutate({
+                          fieldId: field.id,
+                          action: field.active ? "deactivate" : "activate",
+                        })
+                      }
+                    />
                   )}
                 </div>
               </div>

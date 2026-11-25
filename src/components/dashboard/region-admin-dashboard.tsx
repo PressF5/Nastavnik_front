@@ -26,6 +26,7 @@ import { OrganizationHierarchyCard } from "@/components/dashboard/organization-h
 import type { OrganizationContext } from "@/components/dashboard/organization-hierarchy-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { AcademicYearMentorParticipations } from "@/components/dashboard/academic-year-mentor-participations";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Msu = {
   id: number;
@@ -232,16 +233,6 @@ export function RegionAdminDashboard() {
       code,
       name,
     });
-  }
-
-  function confirmDeleteMsu(msu: Msu) {
-    const confirmed = window.confirm(
-      `Удалить МСУ «${msu.name}»? Удаление невозможно, если к нему привязаны образовательные организации или администраторы МСУ.`,
-    );
-
-    if (confirmed) {
-      deleteMsuMutation.mutate(msu.id);
-    }
   }
 
   const isRegionAdmin = user?.role === "REGION_ADMIN";
@@ -597,16 +588,6 @@ export function RegionAdminDashboard() {
       });
     },
   });
-
-  function confirmDeleteAcademicYear(year: AcademicYear) {
-    const confirmed = window.confirm(
-      `Удалить учебный год «${year.name}»? Если к нему привязаны наставнические пары или подтверждённое участие наставников, удалить его нельзя.`,
-    );
-
-    if (confirmed) {
-      deleteAcademicYearMutation.mutate(year.id);
-    }
-  }
 
   function handleCreateAcademicYear(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1036,19 +1017,32 @@ export function RegionAdminDashboard() {
                                     </button>
 
                                     {canDelete && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          confirmDeleteAcademicYear(year)
+                                      <ConfirmDialog
+                                        trigger={
+                                          <button
+                                            type="button"
+                                            disabled={
+                                              deleteAcademicYearMutation.isPending
+                                            }
+                                            className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
+                                          >
+                                            <Trash2 size={15} />
+                                            Удалить
+                                          </button>
                                         }
-                                        disabled={
+                                        title="Удалить учебный год?"
+                                        description={`Учебный год «${year.name}» будет удалён. Если к нему привязаны наставнические пары или подтверждённое участие наставников, удалить его нельзя.`}
+                                        confirmLabel="Удалить"
+                                        variant="danger"
+                                        isPending={
                                           deleteAcademicYearMutation.isPending
                                         }
-                                        className={`${buttonSecondary} text-red-600 hover:border-red-300 hover:bg-red-50`}
-                                      >
-                                        <Trash2 size={15} />
-                                        Удалить
-                                      </button>
+                                        onConfirm={() =>
+                                          deleteAcademicYearMutation.mutate(
+                                            year.id,
+                                          )
+                                        }
+                                      />
                                     )}
 
                                     <button
@@ -1453,16 +1447,25 @@ export function RegionAdminDashboard() {
                               Редактировать
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => confirmDeleteMsu(msu)}
-                              disabled={deleteMsuMutation.isPending}
-                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Удалить ${msu.name}`}
-                            >
-                              <Trash2 size={15} />
-                              Удалить
-                            </button>
+                            <ConfirmDialog
+                              trigger={
+                                <button
+                                  type="button"
+                                  disabled={deleteMsuMutation.isPending}
+                                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  aria-label={`Удалить ${msu.name}`}
+                                >
+                                  <Trash2 size={15} />
+                                  Удалить
+                                </button>
+                              }
+                              title="Удалить МСУ?"
+                              description={`Муниципальное управление «${msu.name}» будет удалено. Удаление невозможно, если к нему привязаны образовательные организации или администраторы МСУ.`}
+                              confirmLabel="Удалить"
+                              variant="danger"
+                              isPending={deleteMsuMutation.isPending}
+                              onConfirm={() => deleteMsuMutation.mutate(msu.id)}
+                            />
                           </div>
                         )}
                       </>

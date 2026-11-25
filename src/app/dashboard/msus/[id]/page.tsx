@@ -8,6 +8,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 
 import { useDashboardShell } from "@/components/dashboard/dashboard-shell-context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { toast } from "sonner";
 
@@ -125,16 +126,6 @@ function MsuDetailContent() {
       code,
       name,
     });
-  }
-
-  function confirmDeleteOrganization(organization: EducationalOrganization) {
-    const confirmed = window.confirm(
-      `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, backend может запретить удаление.`,
-    );
-
-    if (confirmed) {
-      deleteOrganizationMutation.mutate(organization.id);
-    }
   }
 
   function backToMsus() {
@@ -650,21 +641,32 @@ function MsuDetailContent() {
                                 Редактировать
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  confirmDeleteOrganization(organization)
+                              <ConfirmDialog
+                                trigger={
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      deleteOrganizationMutation.isPending ||
+                                      updateOrganizationMutation.isPending
+                                    }
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    aria-label={`Удалить ${organization.name}`}
+                                  >
+                                    <Trash2 size={15} />
+                                    Удалить
+                                  </button>
                                 }
-                                disabled={
-                                  deleteOrganizationMutation.isPending ||
-                                  updateOrganizationMutation.isPending
+                                title="Удалить образовательную организацию?"
+                                description={`Образовательная организация «${organization.name}» будет удалена. Если к ней привязаны пользователи, backend может запретить удаление.`}
+                                confirmLabel="Удалить"
+                                variant="danger"
+                                isPending={deleteOrganizationMutation.isPending}
+                                onConfirm={() =>
+                                  deleteOrganizationMutation.mutate(
+                                    organization.id,
+                                  )
                                 }
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                aria-label={`Удалить ${organization.name}`}
-                              >
-                                <Trash2 size={15} />
-                                Удалить
-                              </button>
+                              />
                             </div>
                           )}
                         </>

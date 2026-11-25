@@ -25,6 +25,7 @@ import {
   OrganizationHierarchyCard,
   type OrganizationContext,
 } from "@/components/dashboard/organization-hierarchy-card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Msu = {
   id: number;
@@ -791,29 +792,34 @@ export function MsuAdminDashboard() {
                                   Редактировать
                                 </button>
 
-                                <button
-                                  type="button"
-                                  disabled={
-                                    deleteOrganizationMutation.isPending ||
-                                    updateOrganizationMutation.isPending
+                                <ConfirmDialog
+                                  trigger={
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        deleteOrganizationMutation.isPending ||
+                                        updateOrganizationMutation.isPending
+                                      }
+                                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                      aria-label={`Удалить ${organization.name}`}
+                                    >
+                                      <Trash2 size={15} />
+                                      Удалить
+                                    </button>
                                   }
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `Удалить образовательную организацию «${organization.name}»? Если к ней привязаны пользователи, удаление будет запрещено.`,
-                                      )
-                                    ) {
-                                      deleteOrganizationMutation.mutate(
-                                        organization.id,
-                                      );
-                                    }
-                                  }}
-                                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                  aria-label={`Удалить ${organization.name}`}
-                                >
-                                  <Trash2 size={15} />
-                                  Удалить
-                                </button>
+                                  title="Удалить образовательную организацию?"
+                                  description={`Образовательная организация «${organization.name}» будет удалена. Если к ней привязаны пользователи, удаление будет запрещено.`}
+                                  confirmLabel="Удалить"
+                                  variant="danger"
+                                  isPending={
+                                    deleteOrganizationMutation.isPending
+                                  }
+                                  onConfirm={() =>
+                                    deleteOrganizationMutation.mutate(
+                                      organization.id,
+                                    )
+                                  }
+                                />
                               </div>
                             )}
                           </>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { UserProfileDialog } from "@/components/dashboard/user-profile-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type AccountStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 
@@ -56,12 +57,6 @@ export function UserRequestCard({
     .join(" ");
 
   const status = statusConfig[user.accountStatus];
-
-  function handleReject() {
-    if (window.confirm(`Отклонить заявку пользователя ${fullName}?`)) {
-      onReject();
-    }
-  }
 
   return (
     <article className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#457B9D]/50 hover:shadow-md">
@@ -120,14 +115,23 @@ export function UserRequestCard({
                 Подтвердить
               </button>
 
-              <button
-                type="button"
-                disabled={pending}
-                onClick={handleReject}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Отклонить
-              </button>
+              <ConfirmDialog
+                trigger={
+                  <button
+                    type="button"
+                    disabled={pending}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Отклонить
+                  </button>
+                }
+                title="Отклонить заявку?"
+                description={`Заявка пользователя «${fullName}» будет отклонена.`}
+                confirmLabel="Отклонить"
+                variant="danger"
+                isPending={pending}
+                onConfirm={onReject}
+              />
             </div>
           )}
 
