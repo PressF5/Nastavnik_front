@@ -5,12 +5,14 @@ import { Dialog } from "radix-ui";
 import { LoaderCircle } from "lucide-react";
 
 type ConfirmDialogProps = {
-  trigger: ReactElement;
+  trigger?: ReactElement;
   title: string;
   description: string;
   confirmLabel?: string;
   isPending?: boolean;
   variant?: "default" | "danger";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onConfirm: () => void;
 };
 
@@ -21,10 +23,22 @@ export function ConfirmDialog({
   confirmLabel = "Подтвердить",
   isPending = false,
   variant = "default",
+  open,
+  onOpenChange,
   onConfirm,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const wasPending = useRef(false);
+
+  const isOpen = open ?? internalOpen;
+
+  function updateOpen(nextOpen: boolean) {
+    if (open === undefined) {
+      setInternalOpen(nextOpen);
+    }
+
+    onOpenChange?.(nextOpen);
+  }
 
   // Закрываем окно после завершения запроса.
   useEffect(() => {
@@ -32,9 +46,9 @@ export function ConfirmDialog({
       wasPending.current = true;
     } else if (wasPending.current) {
       wasPending.current = false;
-      setOpen(false);
+      updateOpen(false);
     }
-  }, [isPending]);
+  }, [isPending, open]);
 
   const confirmButtonClass =
     variant === "danger"
@@ -43,14 +57,14 @@ export function ConfirmDialog({
 
   return (
     <Dialog.Root
-      open={open}
+      open={isOpen}
       onOpenChange={(nextOpen) => {
         if (!isPending) {
-          setOpen(nextOpen);
+          updateOpen(nextOpen);
         }
       }}
     >
-      <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
+      {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-100 bg-black/40 backdrop-blur-sm" />
@@ -68,7 +82,7 @@ export function ConfirmDialog({
             <button
               type="button"
               disabled={isPending}
-              onClick={() => setOpen(false)}
+              onClick={() => updateOpen(false)}
               className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Отмена
