@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog } from "radix-ui";
+import { Dialog, DropdownMenu } from "radix-ui";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   Power,
+  MoreHorizontal,
 } from "lucide-react";
 import type {
   EventItem,
@@ -150,72 +151,88 @@ export function EventDetailsDialog({
                     </span>
                   </div>
 
-                  {/* Кнопки действий */}
+                  {/* Меню действий */}
                   {(canEdit || canDelete) && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {canEdit && event.active && (
-                        <ConfirmDialog
-                          trigger={
-                            <button
-                              type="button"
-                              disabled={isChangingActive}
-                              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <Power size={16} />
-                              Деактивировать
-                            </button>
-                          }
-                          title="Деактивировать мероприятие?"
-                          description={`Мероприятие «${event.name}» перестанет отображаться среди активных мероприятий. Его можно будет активировать повторно.`}
-                          confirmLabel="Деактивировать"
-                          variant="danger"
-                          isPending={isChangingActive}
-                          onConfirm={() => onChangeActive(event, false)}
-                        />
-                      )}
+                    <div className="flex justify-end">
+                      <DropdownMenu.Root>
+                        <DropdownMenu.Trigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            <MoreHorizontal size={18} />
+                            Действия
+                          </button>
+                        </DropdownMenu.Trigger>
 
-                      {canEdit && !event.active && (
-                        <button
-                          type="button"
-                          disabled={isChangingActive}
-                          onClick={() => onChangeActive(event, true)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <Power size={16} />
-                          Активировать
-                        </button>
-                      )}
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.Content
+                            align="end"
+                            side="bottom"
+                            sideOffset={8}
+                            className="z-60 min-w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
+                          >
+                            {canEdit && event.active && (
+                              <ConfirmDialog
+                                trigger={
+                                  <DropdownMenu.Item className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 outline-none transition hover:bg-red-50 focus:bg-red-50">
+                                    <Power size={16} />
+                                    Деактивировать
+                                  </DropdownMenu.Item>
+                                }
+                                title="Деактивировать мероприятие?"
+                                description={`Мероприятие «${event.name}» перестанет отображаться среди активных мероприятий. Его можно будет активировать повторно.`}
+                                confirmLabel="Деактивировать"
+                                variant="danger"
+                                isPending={isChangingActive}
+                                onConfirm={() => onChangeActive(event, false)}
+                              />
+                            )}
 
-                      {canDelete && (
-                        <ConfirmDialog
-                          trigger={
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                            >
-                              <Trash2 size={16} />
-                              Удалить
-                            </button>
-                          }
-                          title="Удалить мероприятие?"
-                          description={`Мероприятие «${event.name}» будет удалено вместе со списком спикеров и дополнительными материалами. Это действие нельзя отменить.`}
-                          confirmLabel="Удалить"
-                          variant="danger"
-                          isPending={isDeleting}
-                          onConfirm={() => onDelete(event)}
-                        />
-                      )}
+                            {canEdit && !event.active && (
+                              <DropdownMenu.Item
+                                onSelect={() => onChangeActive(event, true)}
+                                disabled={isChangingActive}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-700 outline-none transition hover:bg-emerald-50 focus:bg-emerald-50 data-disabled:pointer-events-none data-disabled:opacity-50"
+                              >
+                                <Power size={16} />
+                                Активировать
+                              </DropdownMenu.Item>
+                            )}
 
-                      {canEdit && (
-                        <button
-                          type="button"
-                          onClick={() => onEdit(event)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          <Pencil size={16} />
-                          Редактировать
-                        </button>
-                      )}
+                            {canEdit && (
+                              <DropdownMenu.Item
+                                onSelect={() => onEdit(event)}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none transition hover:bg-slate-100 focus:bg-slate-100"
+                              >
+                                <Pencil size={16} />
+                                Редактировать
+                              </DropdownMenu.Item>
+                            )}
+
+                            {canEdit && canDelete && (
+                              <DropdownMenu.Separator className="my-1 h-px bg-slate-100" />
+                            )}
+
+                            {canDelete && (
+                              <ConfirmDialog
+                                trigger={
+                                  <DropdownMenu.Item className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 outline-none transition hover:bg-red-50 focus:bg-red-50">
+                                    <Trash2 size={16} />
+                                    Удалить
+                                  </DropdownMenu.Item>
+                                }
+                                title="Удалить мероприятие?"
+                                description={`Мероприятие «${event.name}» будет удалено вместе со списком спикеров и дополнительными материалами. Это действие нельзя отменить.`}
+                                confirmLabel="Удалить"
+                                variant="danger"
+                                isPending={isDeleting}
+                                onConfirm={() => onDelete(event)}
+                              />
+                            )}
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Root>
                     </div>
                   )}
 
