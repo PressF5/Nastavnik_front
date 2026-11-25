@@ -9,6 +9,7 @@ import {
   X,
   Pencil,
   Trash2,
+  Power,
 } from "lucide-react";
 import type {
   EventItem,
@@ -26,6 +27,8 @@ type EventDetailsDialogProps = {
   onDelete: (event: EventItem) => void;
   canDelete: boolean;
   isDeleting: boolean;
+  onChangeActive: (event: EventItem, active: boolean) => void;
+  isChangingActive: boolean;
 };
 
 function formatDateTime(value: string) {
@@ -104,6 +107,8 @@ export function EventDetailsDialog({
   onDelete,
   canDelete,
   isDeleting,
+  onChangeActive,
+  isChangingActive,
 }: EventDetailsDialogProps) {
   return (
     <Dialog.Root
@@ -148,6 +153,39 @@ export function EventDetailsDialog({
                   {/* Кнопки действий */}
                   {(canEdit || canDelete) && (
                     <div className="flex flex-wrap items-center gap-2">
+                      {canEdit && event.active && (
+                        <ConfirmDialog
+                          trigger={
+                            <button
+                              type="button"
+                              disabled={isChangingActive}
+                              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Power size={16} />
+                              Деактивировать
+                            </button>
+                          }
+                          title="Деактивировать мероприятие?"
+                          description={`Мероприятие «${event.name}» перестанет отображаться среди активных мероприятий. Его можно будет активировать повторно.`}
+                          confirmLabel="Деактивировать"
+                          variant="danger"
+                          isPending={isChangingActive}
+                          onConfirm={() => onChangeActive(event, false)}
+                        />
+                      )}
+
+                      {canEdit && !event.active && (
+                        <button
+                          type="button"
+                          disabled={isChangingActive}
+                          onClick={() => onChangeActive(event, true)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Power size={16} />
+                          Активировать
+                        </button>
+                      )}
+
                       {canDelete && (
                         <ConfirmDialog
                           trigger={
@@ -164,9 +202,7 @@ export function EventDetailsDialog({
                           confirmLabel="Удалить"
                           variant="danger"
                           isPending={isDeleting}
-                          onConfirm={() => {
-                            onDelete(event);
-                          }}
+                          onConfirm={() => onDelete(event)}
                         />
                       )}
 

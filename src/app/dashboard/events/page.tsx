@@ -172,6 +172,34 @@ export default function EventsPage() {
     },
   });
 
+  const changeEventActiveMutation = useMutation({
+    mutationFn: ({ eventId, active }: { eventId: number; active: boolean }) =>
+      apiFetch<EventItem>(`/api/admin/events/${eventId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ active }),
+      }),
+
+    onSuccess: async (updatedEvent) => {
+      toast.success(
+        updatedEvent.active
+          ? "Мероприятие активировано."
+          : "Мероприятие деактивировано.",
+      );
+
+      setSelectedEvent(updatedEvent);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["admin-events"],
+      });
+    },
+
+    onError: (error) => {
+      toast.error("Не удалось изменить активность мероприятия.", {
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   useEffect(() => {
     const events = eventsQuery.data?.content;
 
@@ -472,6 +500,13 @@ export default function EventsPage() {
         canDelete={canManageSelectedEvent}
         onDelete={(event) => deleteEventMutation.mutate(event.id)}
         isDeleting={deleteEventMutation.isPending}
+        onChangeActive={(event, active) =>
+          changeEventActiveMutation.mutate({
+            eventId: event.id,
+            active,
+          })
+        }
+        isChangingActive={changeEventActiveMutation.isPending}
       />
     </main>
   );
